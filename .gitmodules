@@ -1,0 +1,4 @@
+[submodule "src/ondewo-nlu-api"]
+	path = src/ondewo-nlu-api
+	url = git@github.com:ondewo/ondewo-nlu-api.git
+	branch = release/2.1.0
