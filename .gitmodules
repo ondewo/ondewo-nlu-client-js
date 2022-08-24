@@ -2,3 +2,6 @@
 	path = src/ondewo-nlu-api
 	url = git@github.com:ondewo/ondewo-nlu-api.git
 	branch = release/2.1.0
+[submodule "ondewo-proto-compiler"]
+	path = ondewo-proto-compiler
+	url = git@github.com:ondewo/ondewo-proto-compiler.git
