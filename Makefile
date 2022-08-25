@@ -30,7 +30,7 @@ IMAGE_UTILS_NAME=ondewo-nlu-client-utils-js:${ONDEWO_NLU_VERSION}
 PRETTIER_WRITE?=
 
 CURRENT_RELEASE_NOTES=`cat RELEASE.md \
-	| sed -n '/Release ONDEWO NLU Js Client ${ONDEWO_NLU_VERSION}/,/\*\*/p'`
+	| sed -n '/Release ONDEWO NLU JS Client ${ONDEWO_NLU_VERSION}/,/\*\*/p'`
 
 
 GH_REPO="https://github.com/ondewo/ondewo-nlu-client-js"
@@ -167,6 +167,7 @@ build: check_out_correct_submodule_versions build_compiler update_package npm_ru
 	done
 	cp src/package.json .
 	cp src/README.md .
+	cp src/RELEASE.md .
 	make remove_npm_script
 	make create_npm_package
 	make install_dependencies
