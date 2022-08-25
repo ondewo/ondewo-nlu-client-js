@@ -165,6 +165,8 @@ build: check_out_correct_submodule_versions build_compiler update_package npm_ru
 	do \
 		sudo chown `whoami`:`whoami` $$f && echo $$f; \
 	done
+	cp src/package.json .
+	cp src/README.md .
 	make remove_npm_script
 	make create_npm_package
 	make install_dependencies
@@ -181,6 +183,9 @@ create_npm_package:
 	rm -rf npm
 	mkdir npm
 	cp -R api npm
+	cp package.json npm
+	cp LICENSE npm
+	cp README.md npm
 
 install_dependencies:
 	npm i eslint --save-dev

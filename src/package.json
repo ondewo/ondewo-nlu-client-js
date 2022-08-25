@@ -13,13 +13,13 @@
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"initialize": "git submodule update --init --recursive --remote",
-		"build": "docker run -it -v ${PWD}:/input-volume -v ${PWD}/../lib:/output-volume ondewo-js-proto-compiler ondewo-nlu-api ondewo-nlu-api ondewo",
+		"build": "docker run -it -v ${PWD}:/input-volume -v ${PWD}/../api:/output-volume ondewo-js-proto-compiler ondewo-nlu-api ondewo-nlu-api ondewo",
 		"debug": "docker run -it --entrypoint /bin/bash -v ${PWD}/src:/input-volume -v ${PWD}/src/..:/output-volume $npm_package_config_compiler",
 		"publish-npm": "npm publish ../npm --access public",
 		"build-update": "npm run build-only && npm run start-example",
 		"start-example": "sudo cp lib/nlu.js example/lib/nlu.js && http-server example",
 		"example-link-lib": "sudo ln -s lib/nlu.js example/lib/nlu.js",
-		"build-sample": "docker run -it -v ${PWD}/src:/input-volume -v ${PWD}/src/../lib:/output-volume $npm_package_config_compiler nlu ondewo-nlu-api ondewo-nlu-api ondewo"
+		"build-sample": "docker run -it -v ${PWD}/src:/input-volume -v ${PWD}/src/../api:/output-volume $npm_package_config_compiler nlu ondewo-nlu-api ondewo-nlu-api ondewo"
 	},
 	"author": "ONDEWO GmbH",
 	"homepage": "https://ondewo.com/",
