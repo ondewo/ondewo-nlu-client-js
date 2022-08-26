@@ -1,35 +1,31 @@
 {
-  "name": "@ondewo/ondewo-nlu-client-js",
-  "version": "2.1.0",
-  "description": "Ondewo nlu creation and handling client library for js",
-  "keywords": ["ondewo", "nlu", "api", "client", "js", "grpc"],
-  "config" : {
-    "libname" : "nlu",
-    "compiler": "ondewo-js-proto-compiler",
-    "root": "ondewo-nlu-api",
-    "entry": "ondewo",
-    "apiversion": "2.1.0"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "initialize": "git submodule update --init --recursive --remote",
-    "checkout-api": "cd src/$npm_package_config_root && git checkout $npm_package_config_apiversion && cd ../../",
-    "prebuild": "mv src/ondewo-nlu-api/googleapis/google src/ondewo-nlu-api/google",
-    "build": "npm run checkout-api && npm run build-only",
-    "postbuild": "mv src/ondewo-nlu-api/google src/ondewo-nlu-api/googleapis/google",
-    "debug": "docker run -it --entrypoint /bin/bash -v ${PWD}/src:/input-volume -v ${PWD}/src/..:/output-volume $npm_package_config_compiler",
-    "build-only": "docker run -it -v ${PWD}/src:/input-volume -v ${PWD}/src/../lib:/output-volume $npm_package_config_compiler $npm_package_config_libname $npm_package_config_root $npm_package_config_entry",
-    "publish-npm": "npm publish ../npm --access public",
-    "build-update": "npm run build-only && npm run start-example",
-    "start-example": "sudo cp lib/nlu.js example/lib/nlu.js && http-server example",
-    "example-link-lib": "sudo ln -s lib/nlu.js example/lib/nlu.js",
-    "build-sample": "docker run -it -v ${PWD}/src:/input-volume -v ${PWD}/src/../lib:/output-volume $npm_package_config_compiler nlu ondewo-nlu-api ondewo"
-  },
-  "author": "ONDEWO GmbH",
-  "homepage": "https://ondewo.com/",
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "directory": "https://github.com/ondewo/ondewo-nlu-client-js.git"
-  }
+	"name": "@ondewo/ondewo-nlu-client-js",
+	"version": "2.13.0",
+	"description": "Ondewo nlu creation and handling client library for js",
+	"keywords": [
+		"ondewo",
+		"nlu",
+		"api",
+		"client",
+		"js",
+		"grpc"
+	],
+	"author": "ONDEWO GmbH",
+	"homepage": "https://ondewo.com/",
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "git",
+		"directory": "https://github.com/ondewo/ondewo-nlu-client-js.git"
+	},
+	"dependencies": {
+		"google-protobuf": "3.21.0",
+		"grpc-web": "^1.3.1",
+		"webpack": "^5.74.0"
+	},
+	"devDependencies": {
+		"@typescript-eslint/eslint-plugin": "^5.35.1",
+		"eslint": "^8.22.0",
+		"husky": "^8.0.1",
+		"prettier": "^2.7.1"
+	}
 }
