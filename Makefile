@@ -161,7 +161,7 @@ build: check_out_correct_submodule_versions build_compiler update_package npm_ru
 	@echo "################### PROMT FOR CHANGING FILE OWNERSHIP FROM ROOT TO YOU ##########################"
 	@for f in `ls -la | grep root | cut -c 55-200`; \
 	do \
-		sudo chown `whoami`:`whoami` $$f && echo $$f; \
+		sudo chown -R `whoami`:`whoami` $$f && echo $$f; \
 	done
 	cp src/package.json .
 	cp src/README.md .
