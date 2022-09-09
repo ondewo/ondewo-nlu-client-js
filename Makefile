@@ -81,6 +81,30 @@ check_build: #Checks if all built proto-code is there
 	done
 	@rm -rf build_check.txt
 
+check_for_env:
+	@for env in `cat example/credentials.js | grep EXAMPLES`; do \
+		cat example/credentials.js | grep EXAMPLES | grep -q "`echo $${env} | cut -d "=" -f 1`=\"\";"; \
+		if test $$? != 0; then echo "CREDENTIALS NOT EMPTY!" & make clear_example_cred & exit 1;fi; \
+	done
+
+examples_server:
+	cd example && npx http-server
+
+clear_example_cred:
+	@for env in `cat example/examples.env`; do \
+		sed -i "s/`echo $${env} | cut -d "=" -f 1 `.*\;/`echo $${env} | cut -d "=" -f 1`\=\"\"\;/" example/credentials.js; \
+	done
+
+run_examples:
+	$(eval pid_httpserver:= $(shell pidof http-server))
+	@kill ${pid_httpserver} || echo "No HTTP-Server running"
+	@for env in `cat example/examples.env`; do \
+		sed -i "s/`echo $${env} | cut -d "=" -f 1 `.*\;/`echo $${env}`\;/" example/credentials.js; \
+	done
+	@sed -i "s/ÄÄ/ /" example/credentials.js
+	x-terminal-emulator -e make examples_server
+
+
 ########################################################
 #       Repo Specific Make Targets
 ########################################################

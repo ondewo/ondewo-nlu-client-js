@@ -1,5 +1,5 @@
 #!/bin/sh
 
-
-./node_modules/.bin/eslint .
+make check_for_env
+make eslint
 make prettier

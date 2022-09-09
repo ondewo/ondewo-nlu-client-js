@@ -1,8 +1,12 @@
 <html>
 	<body>
-		<h1> I am an html script to show some usage of the grpc clients </h1>
-		<script src="lib/nlu.js"></script>
-		<!--<script src="https://raw.githubusercontent.com/ondewo/ondewo-vtsi-client-js/master/lib/nlu.min.js"></script>-->
-		<script src="client.js"></script>
+		<h1> ONDEWO JS NLU EXAMPLES </h1>
+		<p id="output-parag"></p>
+		<script src="./api/ondewo_nlu_api.js"></script>
+		<script type="module" src="./credentials.js"></script>
+		<script>
+			const config = new ClientConfig();
+			console.log(config);
+		</script>
 	</body>
 </html>

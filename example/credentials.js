@@ -1,0 +1,7 @@
+export class ClientConfig {
+	EXAMPLES_HOST="";
+	EXAMPLES_PORT="";
+	EXAMPLES_HTTP_TOKEN="";
+	EXAMPLES_USER_NAME="";
+	EXAMPLES_PASSWORD="";
+}
