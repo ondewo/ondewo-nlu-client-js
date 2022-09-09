@@ -108,7 +108,7 @@ release: ## Create Github and NPM Release
 	git status
 	git commit -m "Preparing for Release ${ONDEWO_NLU_VERSION}"
 	git push
-	make build_and_publish_npm_via_docker
+	make publish_npm_via_docker
 	make create_release_branch
 	make create_release_tag
 	make release_to_github_via_docker_image
