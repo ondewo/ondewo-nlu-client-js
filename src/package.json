@@ -1,6 +1,6 @@
 {
 	"name": "@ondewo/ondewo-nlu-client-js",
-	"version": "2.14.0",
+	"version": "3.0.0",
 	"description": "Ondewo nlu creation and handling client library for js",
 	"keywords": [
 		"ondewo",
