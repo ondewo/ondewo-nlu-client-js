@@ -1,6 +1,6 @@
 {
 	"name": "@ondewo/ondewo-nlu-client-js",
-	"version": "3.0.0",
+	"version": "3.1.0",
 	"description": "Ondewo nlu creation and handling client library for js",
 	"keywords": [
 		"ondewo",
@@ -23,8 +23,8 @@
 		"webpack": "^5.74.0"
 	},
 	"devDependencies": {
-		"@typescript-eslint/eslint-plugin": "^5.37.0",
-		"eslint": "^8.23.1",
+		"@typescript-eslint/eslint-plugin": "^5.38.1",
+		"eslint": "^8.24.0",
 		"husky": "^8.0.1",
 		"prettier": "^2.7.1"
 	}
