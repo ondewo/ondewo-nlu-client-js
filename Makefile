@@ -203,6 +203,9 @@ build: check_out_correct_submodule_versions build_compiler update_package npm_ru
 	cp src/RELEASE.md .
 	make remove_npm_script
 	make create_npm_package
+	@$(eval README_CUT_LINES:=$(shell cat -n src/README.md | sed -n "/START OF GITHUB README/,/END OF GITHUB README/p" | grep -o -E '[0-9]+' | sed -e 's/^0\+//' | awk 'NR==1; END{print}'))
+	@$(eval DELETE_LINES:=$(shell echo ${README_CUT_LINES}| sed -e "s/[[:space:]]/,/"))
+	@sed -i "${DELETE_LINES}d" npm/README.md
 	make install_dependencies
 	rm -rf ${NLU_APIS_DIR}/google
 
