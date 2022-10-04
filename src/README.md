@@ -14,8 +14,6 @@
 
 `@ondewo/nlu-client-js` is a compiled version of the [ONDEWO NLU API](https://github.com/ondewo/ondewo-nlu-api). Here you can find the NLU API [documentation](https://ondewo.github.io).
 
-## Installation
-
 ## Setup
 
 Using NPM:
