@@ -1,26 +1,26 @@
-<p align="center">
-  <table align="center">
-  <tr>
-    <td>
-      <a href="https://ondewo.com/en/products/natural-language-understanding/">
-        <img height="120" src="https://raw.githubusercontent.com/ondewo/ondewo-logos/master/ondewo_we_automate_your_phone_calls.png"/>
-      </a>
-       <p align="center">
-        <a href="https://badge.fury.io/js/%40ondewo%2Fondewo-nlu-client-js"><img src="https://badge.fury.io/js/%40ondewo%2Fondewo-nlu-client-js.svg" alt="npm version" height="32"></a>
-       </p>
-    </td>
-    <td>
-      <a href="https://www.linkedin.com/company/ondewo "><img height="35px" src="https://cdn-icons-png.flaticon.com/512/3536/3536505.png"></a>
-      <br><a href="https://www.facebook.com/ondewo"><img height="35px" src="https://cdn-icons-png.flaticon.com/512/733/733547.png"></a>
-      <br><a href="https://twitter.com/ondewo"><img height="35px" src="https://cdn-icons-png.flaticon.com/512/733/733579.png"> </a>
-      <br><a href="https://www.instagram.com/ondewo.ai/"><img height="35px" src="https://cdn-icons-png.flaticon.com/512/174/174855.png"></a>
-    </td>
-  </tr>
-</table>
+<div align="center">
+  <table>
+    <tr>
+      <td>
+        <a href="https://ondewo.com/en/products/natural-language-understanding/">
+            <img width="400px" src="https://raw.githubusercontent.com/ondewo/ondewo-logos/master/ondewo_we_automate_your_phone_calls.png"/>
+        </a>
+      </td>
+    </tr>
+    <tr>
+       <td align="center">
+          <a href="https://www.linkedin.com/company/ondewo "><img width="40px" src="https://cdn-icons-png.flaticon.com/512/3536/3536505.png"></a>
+          <a href="https://www.facebook.com/ondewo"><img width="40px" src="https://cdn-icons-png.flaticon.com/512/733/733547.png"></a>
+          <a href="https://twitter.com/ondewo"><img width="40px" src="https://cdn-icons-png.flaticon.com/512/733/733579.png"> </a>
+          <a href="https://www.instagram.com/ondewo.ai/"><img width="40px" src="https://cdn-icons-png.flaticon.com/512/174/174855.png"></a>
+          <a href="https://badge.fury.io/js/%40ondewo%2Fondewo-nlu-client-js"><img src="https://badge.fury.io/js/%40ondewo%2Fondewo-nlu-client-js.svg" alt="npm version" height="32"></a>
+       </td>
+    </tr>
+  </table>
   <h1 align="center">
     ONDEWO NLU Client Javascript
   </h1>
-</p>
+</div>
 
 ## Overview
 
@@ -43,7 +43,9 @@ git clone https://github.com/ondewo/ondewo-nlu-client-js.git ## Clone repository
 cd ondewo-nlu-client-js                                      ## Change into repo-directoy
 make setup_developer_environment_locally                     ## Install dependencies
 ```
+
 ## Package structure
+
 ```
 npm
 ├── api
@@ -54,12 +56,15 @@ npm
 ├── package.json
 └── README.md
 ```
+
 [comment]: <> (START OF GITHUB README)
+
 ## Build
 
 The `make build` command is dependent on 2 `repositories` and their speciefied `version`:
-  - [ondewo-nlu-api](https://github.com/ondewo/ondewo-nlu-api) -- `NLU_API_GIT_BRANCH` in `Makefile`
-  - [ondewo-proto-compiler](https://github.com/ondewo/ondewo-proto-compiler) -- `ONDEWO_PROTO_COMPILER_GIT_BRANCH` in `Makefile`
+
+- [ondewo-nlu-api](https://github.com/ondewo/ondewo-nlu-api) -- `NLU_API_GIT_BRANCH` in `Makefile`
+- [ondewo-proto-compiler](https://github.com/ondewo/ondewo-proto-compiler) -- `ONDEWO_PROTO_COMPILER_GIT_BRANCH` in `Makefile`
 
 Other than creating the proto-code, `build` also installs the `dev-dependencies` and changes the owner of the proto-code-files from `root` to the `current user`.
 
@@ -70,6 +75,7 @@ Other than creating the proto-code, `build` also installs the `dev-dependencies`
 The repository is published to GitHub and NPM by the Automated Release Process of ONDEWO.
 
 TODO after PR merge:
+
 - checkout master
   ```shell
   git checkout master
@@ -80,6 +86,7 @@ TODO after PR merge:
   ```
 - Adjust `ONDEWO_NLU_VERSION` in the `Makefile` <br><br>
 - Add new Release Notes to `src/RELEASE.md` in following format:
+
   ```
   ## Release ONDEWO NLU Js Client X.X.X    <----- Beginning of Notes
 
@@ -87,12 +94,13 @@ TODO after PR merge:
 
   *****************                             <----- End of Notes
   ```
+
 - release
   ```shell
   make ondewo_release
   ```
-<br>
-The release process can be divided into 6 Steps:
+  <br>
+  The release process can be divided into 6 Steps:
 
 1. `build` specified version of the `ondewo-nlu-api`
 2. `commit and push` all changes in code resulting from the `build`
@@ -101,6 +109,6 @@ The release process can be divided into 6 Steps:
 5. Create and push the `release tag` e.g. `1.3.20`
 6. Create a new `Release` on GitHub
 
-> :warning:  The Release Automation checks if the build has created all the proto-code files, but it does not check the code-integrity. Please build and test the generated code prior to starting the release process.
+> :warning: The Release Automation checks if the build has created all the proto-code files, but it does not check the code-integrity. Please build and test the generated code prior to starting the release process.
 
 [comment]: <> (END OF GITHUB README)

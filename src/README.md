@@ -1,26 +1,26 @@
-<p align="center">
-  <table align="center">
-  <tr>
-    <td>
-      <a href="https://ondewo.com/en/products/natural-language-understanding/">
-        <img height="120" src="https://raw.githubusercontent.com/ondewo/ondewo-logos/master/ondewo_we_automate_your_phone_calls.png"/>
-      </a>
-       <p align="center">
-        <a href="https://badge.fury.io/js/%40ondewo%2Fondewo-nlu-client-js"><img src="https://badge.fury.io/js/%40ondewo%2Fondewo-nlu-client-js.svg" alt="npm version" height="32"></a>
-       </p>
-    </td>
-    <td>
-      <a href="https://www.linkedin.com/company/ondewo "><img height="35px" src="https://cdn-icons-png.flaticon.com/512/3536/3536505.png"></a>
-      <br><a href="https://www.facebook.com/ondewo"><img height="35px" src="https://cdn-icons-png.flaticon.com/512/733/733547.png"></a>
-      <br><a href="https://twitter.com/ondewo"><img height="35px" src="https://cdn-icons-png.flaticon.com/512/733/733579.png"> </a>
-      <br><a href="https://www.instagram.com/ondewo.ai/"><img height="35px" src="https://cdn-icons-png.flaticon.com/512/174/174855.png"></a>
-    </td>
-  </tr>
-</table>
+<div align="center">
+  <table>
+    <tr>
+      <td>
+        <a href="https://ondewo.com/en/products/natural-language-understanding/">
+            <img width="400px" src="https://raw.githubusercontent.com/ondewo/ondewo-logos/master/ondewo_we_automate_your_phone_calls.png"/>
+        </a>
+      </td>
+    </tr>
+    <tr>
+       <td align="center">
+          <a href="https://www.linkedin.com/company/ondewo "><img width="40px" src="https://cdn-icons-png.flaticon.com/512/3536/3536505.png"></a>
+          <a href="https://www.facebook.com/ondewo"><img width="40px" src="https://cdn-icons-png.flaticon.com/512/733/733547.png"></a>
+          <a href="https://twitter.com/ondewo"><img width="40px" src="https://cdn-icons-png.flaticon.com/512/733/733579.png"> </a>
+          <a href="https://www.instagram.com/ondewo.ai/"><img width="40px" src="https://cdn-icons-png.flaticon.com/512/174/174855.png"></a>
+          <a href="https://badge.fury.io/js/%40ondewo%2Fondewo-nlu-client-js"><img src="https://badge.fury.io/js/%40ondewo%2Fondewo-nlu-client-js.svg" alt="npm version" height="32"></a>
+       </td>
+    </tr>
+  </table>
   <h1 align="center">
     ONDEWO NLU Client Javascript
   </h1>
-</p>
+</div>
 
 ## Overview
 
