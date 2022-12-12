@@ -193,8 +193,8 @@ update_package: ## Updates Package Version in src/package.json
 	@sed -i "s/\"version\": \"[0-9]*.[0-9]*.[0-9]\"/\"version\": \"${ONDEWO_NLU_VERSION}\"/g" src/package.json
 
 build: check_out_correct_submodule_versions build_compiler update_package npm_run_build ## Build Code with Proto-Compiler
-	@echo "################### PROMT FOR CHANGING FILE OWNERSHIP FROM ROOT TO YOU ##########################"
-	@for f in `ls -la | grep root | cut -c 55-200`; \
+	@echo "################### PROMPT FOR CHANGING FILE OWNERSHIP FROM ROOT TO YOU ##########################"
+	@for f in `find . -group root`; \
 	do \
 		sudo chown -R `whoami`:`whoami` $$f && echo $$f; \
 	done
