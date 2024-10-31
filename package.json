@@ -1,34 +1,34 @@
 {
-  "name": "@ondewo/ondewo-nlu-client-js",
-  "version": "5.0.0",
-  "description": "Ondewo nlu creation and handling client library for js",
-  "keywords": [
-    "ondewo",
-    "nlu",
-    "api",
-    "client",
-    "js",
-    "grpc"
-  ],
-  "author": "ONDEWO GmbH",
-  "homepage": "https://ondewo.com/",
-  "license": "Apache-2.0",
-  "repository": {
-    "type": "git",
-    "directory": "https://github.com/ondewo/ondewo-nlu-client-js.git"
-  },
-  "dependencies": {
-    "google-protobuf": "3.21.4",
-    "grpc-web": "^1.5.0",
-    "webpack": "^5.95.0"
-  },
-  "devDependencies": {
-    "@eslint/eslintrc": "^3.1.0",
-    "@eslint/js": "^9.13.0",
-    "@typescript-eslint/eslint-plugin": "^8.12.2",
-    "eslint": "^9.13.0",
-    "global": "^4.4.0",
-    "husky": "^9.1.6",
-    "prettier": "^3.3.3"
-  }
+	"name": "@ondewo/ondewo-nlu-client-js",
+	"version": "5.0.0",
+	"description": "Ondewo nlu creation and handling client library for js",
+	"keywords": [
+		"ondewo",
+		"nlu",
+		"api",
+		"client",
+		"js",
+		"grpc"
+	],
+	"author": "ONDEWO GmbH",
+	"homepage": "https://ondewo.com/",
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "git",
+		"directory": "https://github.com/ondewo/ondewo-nlu-client-js.git"
+	},
+	"dependencies": {
+		"google-protobuf": "3.21.4",
+		"grpc-web": "^1.5.0",
+		"webpack": "^5.95.0"
+	},
+	"devDependencies": {
+		"@eslint/eslintrc": "^3.1.0",
+		"@eslint/js": "^9.13.0",
+		"@typescript-eslint/eslint-plugin": "^8.12.2",
+		"eslint": "^9.13.0",
+		"global": "^4.4.0",
+		"husky": "^9.1.6",
+		"prettier": "^3.3.3"
+	}
 }
