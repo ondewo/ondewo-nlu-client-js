@@ -15,10 +15,10 @@ export
 # 		Variables
 ########################################################
 
-ONDEWO_NLU_VERSION = 3.4.0
+ONDEWO_NLU_VERSION = 5.0.0
 
-NLU_API_GIT_BRANCH=tags/3.4.0
-ONDEWO_PROTO_COMPILER_GIT_BRANCH=tags/4.1.1
+NLU_API_GIT_BRANCH=tags/5.0.0
+ONDEWO_PROTO_COMPILER_GIT_BRANCH=tags/5.0.0
 ONDEWO_PROTO_COMPILER_DIR=ondewo-proto-compiler
 NLU_APIS_DIR=src/ondewo-nlu-api
 NLU_PROTOS_DIR=${NLU_APIS_DIR}/ondewo
@@ -56,7 +56,7 @@ prettier: ## Checks formatting with Prettier - Use PRETTIER_WRITE=-w to also aut
 	node_modules/.bin/prettier --config .prettierrc --check --ignore-path .prettierignore $(PRETTIER_WRITE) ./
 
 eslint: ## Checks Code Logic and Typing
-	./node_modules/.bin/eslint .
+	./node_modules/.bin/eslint --config eslint.config.mjs .
 
 TEST:	## Prints some important variables
 	@echo "Release Notes: \n \n $(CURRENT_RELEASE_NOTES)"
@@ -226,9 +226,12 @@ create_npm_package:
 
 install_dependencies:
 	npm i eslint --save-dev
+	npm i @eslint/eslintrc --save-dev
+	npm i @eslint/js --save-dev
+	npm i global --save-dev
 	npm i prettier --save-dev
-	npm i husky --save-dev
 	npm i @typescript-eslint/eslint-plugin --save-dev
+	npm i husky --save-dev
 
 check_out_correct_submodule_versions: ## Fetches all Submodules and checksout specified branch
 	@echo "START checking out correct submodule versions ..."
