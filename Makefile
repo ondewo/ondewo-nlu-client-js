@@ -225,13 +225,14 @@ create_npm_package:
 	cp README.md npm
 
 install_dependencies:
-	npm i eslint --save-dev
-	npm i @eslint/eslintrc --save-dev
-	npm i @eslint/js --save-dev
-	npm i global --save-dev
-	npm i prettier --save-dev
-	npm i @typescript-eslint/eslint-plugin --save-dev
-	npm i husky --save-dev
+	npm i --save-dev \
+		@eslint/eslintrc \
+		@eslint/js \
+		@typescript-eslint/eslint-plugin \
+		eslint \
+		global \
+		husky \
+		prettier
 
 check_out_correct_submodule_versions: ## Fetches all Submodules and checksout specified branch
 	@echo "START checking out correct submodule versions ..."
