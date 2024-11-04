@@ -1,11 +1,16 @@
-RELEASE.md
-src/
-esm2020/
-fesm2015/
-fesm2020/
-api/
-ondewo-proto-compiler
-ondewo-nlu-api
+# release automation
+ondewo-devops-accounts
+build_check.*
+build_check.txt
+build_check_temp.txt
+
 npm
-.vscode
-ondewo-nlu-client-angular.metadata.json
+.idea/
+.vscode/
+node_modules
+
+ondewo-nlu-api/*
+src/ondewo-nlu-api/*
+
+.isort.cfg
+grpc_cert
