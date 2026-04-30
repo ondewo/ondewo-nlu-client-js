@@ -1,6 +1,6 @@
 {
 	"name": "@ondewo/ondewo-nlu-client-js",
-	"version": "6.7.0",
+	"version": "6.8.0",
 	"description": "ONDEWO Natural Language Understanding (NLU) Client library for Js",
 	"author": "ONDEWO GmbH <office@ondewo.com>",
 	"homepage": "https://ondewo.com",
@@ -25,7 +25,7 @@
 	"devDependencies": {
 		"@eslint/eslintrc": "^3.3.5",
 		"@eslint/js": "^9.39.4",
-		"@typescript-eslint/eslint-plugin": "^8.58.2",
+		"@typescript-eslint/eslint-plugin": "^8.59.1",
 		"eslint": "^9.39.4",
 		"global": "^4.4.0",
 		"husky": "^9.1.7",
