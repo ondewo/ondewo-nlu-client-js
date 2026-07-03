@@ -133,7 +133,7 @@ runTestCase('lists agent display names using a bearer Authorization header (no c
 	// A real ListAgentsRequest carrying the large page token was sent.
 	assert.equal(recorded.request.getPageToken(), DEFAULT_PAGE_TOKEN);
 	// Auth is the bearer header from the offline-token provider -- NOT a cai-token / basic header.
-	assert.deepEqual(recorded.metadata, { authorization: AUTHORIZATION_HEADER });
+	assert.deepEqual(recorded.metadata, { Authorization: AUTHORIZATION_HEADER });
 	// The background refresh loop was stopped once the call completed.
 	assert.equal(providerStub.state.stopped, true);
 });

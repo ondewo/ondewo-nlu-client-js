@@ -94,7 +94,7 @@ async function listAgentDisplayNames(options) {
 		const client = clientFactory(options.grpcWebHost);
 		const request = new api.ListAgentsRequest();
 		request.setPageToken(DEFAULT_PAGE_TOKEN);
-		const metadata = { authorization: provider.getAuthorizationHeader() };
+		const metadata = { Authorization: provider.getAuthorizationHeader() };
 		const response = await client.listAgents(request, metadata);
 		return response.getAgentsWithOwnersList().map((agentWithOwner) => agentWithOwner.getAgent().getDisplayName());
 	} finally {

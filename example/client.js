@@ -33,7 +33,7 @@ async function listAgentsExample() {
 	const request = new ondewo_nlu_api.ListAgentsRequest();
 	request.setPageToken('page_size-10000');
 
-	const response = await client.listAgents(request, { authorization });
+	const response = await client.listAgents(request, { Authorization: authorization });
 	const displayNames = response
 		.getAgentsWithOwnersList()
 		.map((agentWithOwner) => agentWithOwner.getAgent().getDisplayName());
