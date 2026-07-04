@@ -16,10 +16,10 @@
 // Minimal browser example, loaded by index.html after api/ondewo_nlu_api.js (which exposes every
 // generated client + message class on the `ondewo_nlu_api` global).
 //
-// Post-Keycloak auth: the legacy cai-token / HTTP-basic / Users.login() flow was removed. Pass a
-// short-lived bearer access token as the `authorization` gRPC-web metadata header. Obtain the token from
-// the D18 offline-token provider (auth/offlineTokenProvider.js, login()) bundled into your app; it is a
-// placeholder below. See example/listAgents.js for the same flow as a reusable, unit-tested module.
+// Auth is bearer-only: pass a short-lived Keycloak access token as the `Authorization` gRPC-web metadata
+// header. Obtain the token from the D18 offline-token provider (auth/offlineTokenProvider.js, login())
+// bundled into your app; it is a placeholder below. See example/listAgents.js for the same flow as a
+// reusable, unit-tested module.
 
 'use strict';
 

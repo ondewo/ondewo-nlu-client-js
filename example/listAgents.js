@@ -16,9 +16,8 @@
 // Minimal, unit-tested example: authenticate with the D18 Keycloak offline-token flow and list the
 // display names of every agent the technical user can see.
 //
-// Auth (post-Keycloak migration): the legacy cai-token / HTTP-basic / Users.login() credential flow was
-// removed. Obtain a short-lived bearer access token from auth/offlineTokenProvider.js (login()) and send
-// it as the `authorization` gRPC-web metadata header on every call.
+// Auth is bearer-only: obtain a short-lived Keycloak access token from auth/offlineTokenProvider.js
+// (login()) and send it as the `Authorization` gRPC-web metadata header on every call.
 //
 // Browser wiring (index.html loads api/ondewo_nlu_api.js as the `ondewo_nlu_api` global):
 //   const names = await listAgentDisplayNames({

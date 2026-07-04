@@ -23,6 +23,8 @@
 
 'use strict';
 
+/* global URLSearchParams, setTimeout, clearTimeout, module */
+
 /**
  * A minimal structural subset of the WHATWG `Response` consumed by this module: the success flag, the
  * HTTP status, and a `text()` reader. Modelled explicitly (rather than reusing the DOM `Response`) so
