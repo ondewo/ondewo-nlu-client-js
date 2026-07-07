@@ -14,7 +14,7 @@ export
 # 		Variables
 ########################################################
 
-ONDEWO_NLU_VERSION = 6.12.0
+ONDEWO_NLU_VERSION = 6.13.0
 
 NLU_API_GIT_BRANCH=OND211-2418-add-keycloak-for-2-fa
 ONDEWO_PROTO_COMPILER_GIT_BRANCH=tags/5.10.0
