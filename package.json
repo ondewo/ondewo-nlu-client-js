@@ -17,10 +17,15 @@
     "type": "git",
     "directory": "https://github.com/ondewo/ondewo-nlu-client-js.git"
   },
+  "scripts": {
+    "test": "c8 --check-coverage --lines 100 --branches 100 --functions 100 --include auth/offlineTokenProvider.js --exclude '**/*.spec.js' --reporter text node --test auth/offlineTokenProvider.spec.js",
+    "test:examples": "node --test example/listAgents.spec.js"
+  },
   "dependencies": {
     "google-protobuf": "^3.21.4",
     "grpc-web": "^1.5.0",
     "terser-webpack-plugin": "^5.3.14",
+    "undici": "^6.27.0",
     "webpack": "^5.99.9",
     "webpack-cli": "^6.0.1",
     "webpack-merge": "^6.0.1"
@@ -29,6 +34,7 @@
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^9.39.4",
     "@typescript-eslint/eslint-plugin": "^8.63.0",
+    "c8": "^11.0.0",
     "eslint": "^9.39.4",
     "global": "^4.4.0",
     "husky": "^9.1.7",
