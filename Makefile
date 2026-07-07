@@ -16,8 +16,8 @@ export
 
 ONDEWO_NLU_VERSION = 6.13.0
 
-NLU_API_GIT_BRANCH=tags/6.13.0
-ONDEWO_PROTO_COMPILER_GIT_BRANCH=tags/5.9.0
+NLU_API_GIT_BRANCH=OND211-2418-add-keycloak-for-2-fa
+ONDEWO_PROTO_COMPILER_GIT_BRANCH=tags/5.10.0
 ONDEWO_PROTO_COMPILER_DIR=ondewo-proto-compiler
 NLU_APIS_DIR=src/ondewo-nlu-api
 NLU_PROTOS_DIR=${NLU_APIS_DIR}/ondewo
@@ -218,6 +218,8 @@ create_npm_package: ## Create NPM Package for Release
 	rm -rf npm
 	mkdir npm
 	cp -R api npm
+	cp -R auth npm
+	rm -f npm/auth/*.spec.js
 	cp package.json npm
 	cp LICENSE npm
 	cp README.md npm
