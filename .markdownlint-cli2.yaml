@@ -1,0 +1,35 @@
+# Auto-fix the mechanical rules (blank-line spacing, list indentation, emphasis
+# style, ...) the same way ruff-format does for Python.
+fix: true
+config:
+  # MD013 line-length: docs contain long lines / tables.
+  MD013: false
+  # MD033 no-inline-html: docs embed <p>/<code> HTML tags.
+  MD033: false
+  # MD024 duplicate-heading: RELEASE.md changelogs repeat "Improvements" /
+  # "Breaking Changes" headings under each release section (as direct siblings).
+  MD024: false
+  # MD025 single-h1: RELEASE.md changelogs use one top-level heading per release
+  # section, so many H1s coexist in one document by design.
+  MD025: false
+  # MD035 hr-style: RELEASE.md uses decorative "*****" section separators of
+  # varying length between releases (the auto-fixer also crashes on these).
+  MD035: false
+  # MD040 fenced-code-language: README embeds plain directory-tree / output blocks.
+  MD040: false
+  # MD041 first-line-heading: README opens with the HTML branding/logo header.
+  MD041: false
+  # MD045 image-alt-text: the branding header uses <img> logos / social icons.
+  MD045: false
+globs:
+  - "*.md"
+ignores:
+  - "node_modules/**"
+  - "lib/**"
+  - "dist/**"
+  - "build/**"
+  - "api/**"
+  - "src/ondewo-nlu-api/**"
+  - "ondewo-proto-compiler/**"
+  - "ondewo-*-api/**"
+  - ".venv/**"
