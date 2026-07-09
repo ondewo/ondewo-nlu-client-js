@@ -43,7 +43,7 @@ git clone https://github.com/ondewo/ondewo-nlu-client-js.git ## Clone repository
 cd ondewo-nlu-client-js                                      ## Change into repo-directoy
 make setup_developer_environment_locally                     ## Install dependencies
 ```
-
+## Package structure
 ```
 npm
 ├── api
@@ -81,9 +81,16 @@ const response = await client.listAgents(request, metadata);
 provider.stop(); // stop the background refresh loop when done
 ```
 
+See `example/listAgents.js` for a complete, unit-tested example.
+
+[comment]: <> (START OF GITHUB README)
 ## Build
 
-- [ondewo-proto-compiler](https://github.com/ondewo/ondewo-proto-compiler) -- `ONDEWO_PROTO_COMPILER_GIT_BRANCH` in `Makefile`
+The `make build` command is dependent on 2 `repositories` and their speciefied `version`:
+  - [ondewo-nlu-api](https://github.com/ondewo/ondewo-nlu-api) -- `NLU_API_GIT_BRANCH` in `Makefile`
+  - [ondewo-proto-compiler](https://github.com/ondewo/ondewo-proto-compiler) -- `ONDEWO_PROTO_COMPILER_GIT_BRANCH` in `Makefile`
+
+Other than creating the proto-code, `build` also installs the `dev-dependencies` and changes the owner of the proto-code-files from `root` to the `current user`.
 
 > :white_check_mark: The js-compiler (version ~4.1.1) will prompt to download webpack -- write yes / y to finish the build
 
@@ -92,34 +99,28 @@ provider.stop(); // stop the background refresh loop when done
 The repository is published to GitHub and NPM by the Automated Release Process of ONDEWO.
 
 TODO after PR merge:
-
 - checkout master
-
+  ```shell
   git checkout master
-
+  ```
 - pull newest state
-
   ```shell
   git pull
-
+  ```
 - Adjust `ONDEWO_NLU_VERSION` in the `Makefile` <br><br>
-
 - Add new Release Notes to `src/RELEASE.md` in following format:
-
+  ```
   ## Release ONDEWO NLU Js Client X.X.X    <----- Beginning of Notes
 
   ...<NOTES>...
 
   *****************                             <----- End of Notes
-
   ```
-
 - release
-
+  ```shell
   make ondewo_release
-
   ```
-
+<br>
 The release process can be divided into 6 Steps:
 
 1. `build` specified version of the `ondewo-nlu-api`
@@ -130,3 +131,5 @@ The release process can be divided into 6 Steps:
 6. Create a new `Release` on GitHub
 
 > :warning:  The Release Automation checks if the build has created all the proto-code files, but it does not check the code-integrity. Please build and test the generated code prior to starting the release process.
+
+[comment]: <> (END OF GITHUB README)

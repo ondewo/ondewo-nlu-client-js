@@ -6,6 +6,7 @@ config:
   MD013: false
   # MD033 no-inline-html: docs embed <p>/<code> HTML tags.
   MD033: false
+  MD053: false
   # MD024 duplicate-heading: RELEASE.md changelogs repeat "Improvements" /
   # "Breaking Changes" headings under each release section (as direct siblings).
   MD024: false
