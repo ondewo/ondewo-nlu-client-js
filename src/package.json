@@ -13,7 +13,14 @@
     "js",
     "grpc"
   ],
+  "files": [
+    "api/ondewo_nlu_api.js",
+    "api/ondewo_nlu_api.min.js",
+    "api/ondewo_nlu_api.min.js.map",
+    "auth/offlineTokenProvider.js"
+  ],
   "scripts": {
+    "prepare": "husky",
     "test": "echo \"Error: no test specified\" && exit 1",
     "initialize": "git submodule update --init --recursive --remote",
     "build": "docker run -v ${PWD}:/input-volume -v ${PWD}/../api:/output-volume ondewo-js-proto-compiler ondewo-nlu-api ondewo-nlu-api ondewo",

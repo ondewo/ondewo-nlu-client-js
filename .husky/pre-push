@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+# The same gates as .husky/pre-commit and .github/workflows/tests.yml: `tsc --checkJs --strict` over the
+# hand-written JSDoc types, then every spec in one c8 process at a 100% statement/branch/function/line
+# threshold. Last check before code leaves this machine, and the gate that still covers the automated
+# release (which skips the pre-commit block via ONDEWO_RELEASE=1).
+#
+# Deliberately no eslint/prettier here -- prettier's `-w` variant must never rewrite files during a push,
+# and eslint already ran at commit time.
+npm run typecheck
+npm test

@@ -1,32 +1,46 @@
 name: tests
 
+# Runs on every commit pushed to any branch, and on every pull request.
 on:
   push:
     branches: ['**']
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      # No `submodules:` input, on purpose. The generated gRPC/protobuf bundle (api/ondewo_nlu_api*.js)
+      # is COMMITTED to this repo and nothing under test reads src/ondewo-nlu-api/ or
+      # ondewo-proto-compiler/, so the public runner needs no deploy key for the two private submodules.
+      - uses: actions/checkout@v7
 
+      # Node 20: c8@11 declares engines "20 || >=22", and node:test mock.timers needs >= 20.4.
       - name: Set up Node.js 20
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
+          cache: 'npm'
 
+      # package-lock.json is committed, so `npm ci` installs reproducibly and fails loudly on drift.
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
-      # The repo is ~95% generated gRPC/protobuf stubs; coverage is gated on the HAND-WRITTEN surface only
-      # (the D18 Keycloak offline-token auth provider, auth/offlineTokenProvider.js). The test runs node's
-      # built-in test runner under c8 with a 100% line/branch/function coverage gate scoped to that file.
-      - name: Unit tests + 100% coverage gate on hand-written auth code
+      - name: ESLint
+        run: make eslint
+
+      # Mechanically enforces that every hand-written variable, function, parameter, return value and
+      # constant carries type information: tsc runs with checkJs + strict, so a missing or wrong JSDoc
+      # type is a build failure. Scope is the explicit `files` list in tsconfig.typecheck.json.
+      - name: JSDoc type check
+        run: npm run typecheck
+
+      # ONE gate for the whole hand-written surface. Every spec runs in a single c8 process at a 100%
+      # statement/branch/function/line threshold, `--per-file` so no file can be averaged away, and
+      # `--all` so a new hand-written file under auth/ or example/ that no test requires cannot sit at
+      # 0% unnoticed. Generated stubs (api/), the submodules and the *.spec.js files are out of scope.
+      - name: All tests + 100% coverage gate on the hand-written code
         run: npm test
-
-      # Mock-based tests for the hand-written examples (example/*.spec.js): the gRPC-web client and the
-      # offline-token login are stubbed, so no live backend is needed. Kept out of the coverage-gated
-      # `npm test` above so that gate stays scoped to auth/offlineTokenProvider.js only.
-      - name: Example tests (gRPC client mocked, no live server)
-        run: npm run test:examples

@@ -26,7 +26,7 @@
 //       keycloakUrl: 'https://localhost:8443/auth',
 //       realm: 'ondewo-ccai-platform',
 //       clientId: 'ondewo-nlu-cai-sdk-public',
-//       username: 'tech-user@example.com',
+//       username: 'tech-user@example.com',   // must be a 2FA-exempt technical user (see login())
 //       password: 'super-secret'
 //   });
 
@@ -36,8 +36,32 @@
 
 const { login } = require('../auth/offlineTokenProvider');
 
-// The NLU List* RPCs default to page_size=10; request a large page so the example returns every agent.
+/**
+ * The page token sent on the ListAgents request. The NLU List* RPCs default to `page_size=10`; a large
+ * page is requested so the example returns every agent rather than the first ten.
+ *
+ * @type {string}
+ */
 const DEFAULT_PAGE_TOKEN = 'page_size-10000';
+
+/**
+ * The subset of {@link login}'s provider this example actually uses: the bearer header for the gRPC-web
+ * metadata, and the stop switch for the background refresh loop. Modelled structurally (rather than as
+ * the concrete `OfflineTokenProvider`) so the unit test's stub satisfies the same contract.
+ *
+ * @typedef {object} TokenProviderLike
+ * @property {() => string} getAuthorizationHeader
+ *   Returns the `Bearer <access_token>` value for the `Authorization` metadata header.
+ * @property {() => void} stop
+ *   Stops the background token-refresh loop.
+ */
+
+/**
+ * The `login`-shaped function used to authenticate. Injectable so the unit test can supply a stub;
+ * defaults to the real {@link login}.
+ *
+ * @typedef {(options: import('../auth/offlineTokenProvider').LoginOptions) => Promise<TokenProviderLike>} LoginImpl
+ */
 
 /**
  * The options accepted by {@link listAgentDisplayNames}. The credential + connection fields are required;
@@ -59,7 +83,7 @@ const DEFAULT_PAGE_TOKEN = 'page_size-10000';
  *   The technical-user username (ROPC password grant).
  * @property {string} password
  *   The technical-user password.
- * @property {typeof login} [loginImpl]
+ * @property {LoginImpl} [loginImpl]
  *   Injection seam for tests; defaults to the real {@link login}.
  * @property {(host: string) => any} [clientFactory]
  *   Injection seam for tests; defaults to `new api.AgentsPromiseClient(host, null, null)`.
@@ -73,15 +97,35 @@ const DEFAULT_PAGE_TOKEN = 'page_size-10000';
  *   The connection + credential options (see {@link ListAgentsExampleOptions}).
  * @returns {Promise<string[]>}
  *   The display name of every agent the server returned.
+ * @throws {import('../auth/offlineTokenProvider').TokenError}
+ *   When the offline-token login fails (bad credentials, unreachable Keycloak, unusable token response).
+ * @throws {Error}
+ *   When the ListAgents RPC fails; the gRPC-web status error is propagated unchanged.
  */
 async function listAgentDisplayNames(options) {
+	/**
+	 * The generated ondewo-nlu-client-js namespace supplying the client and message classes.
+	 * @type {any}
+	 */
 	const api = options.api;
+	/**
+	 * The login function to authenticate with: the injected stub, or the real offline-token login.
+	 * @type {LoginImpl}
+	 */
 	const loginImpl = options.loginImpl !== undefined ? options.loginImpl : login;
+	/**
+	 * The factory building the gRPC-web client: the injected stub, or the generated promise client.
+	 * @type {(host: string) => any}
+	 */
 	const clientFactory =
 		options.clientFactory !== undefined
 			? options.clientFactory
 			: (host) => new api.AgentsPromiseClient(host, null, null);
 
+	/**
+	 * The authenticated token provider; its refresh loop is stopped in the `finally` below.
+	 * @type {TokenProviderLike}
+	 */
 	const provider = await loginImpl({
 		keycloakUrl: options.keycloakUrl,
 		realm: options.realm,
@@ -90,12 +134,36 @@ async function listAgentDisplayNames(options) {
 		password: options.password
 	});
 	try {
+		/**
+		 * The gRPC-web Agents client bound to the configured envoy endpoint.
+		 * @type {any}
+		 */
 		const client = clientFactory(options.grpcWebHost);
+		/**
+		 * The generated ListAgents request message.
+		 * @type {any}
+		 */
 		const request = new api.ListAgentsRequest();
 		request.setPageToken(DEFAULT_PAGE_TOKEN);
+		/**
+		 * The gRPC-web call metadata; auth is the bearer header from the offline-token provider.
+		 * @type {Record<string, string>}
+		 */
 		const metadata = { Authorization: provider.getAuthorizationHeader() };
+		/**
+		 * The generated ListAgents response message.
+		 * @type {any}
+		 */
 		const response = await client.listAgents(request, metadata);
-		return response.getAgentsWithOwnersList().map((agentWithOwner) => agentWithOwner.getAgent().getDisplayName());
+		return response.getAgentsWithOwnersList().map(
+			/**
+			 * @param {any} agentWithOwner
+			 *   One generated `AgentWithOwner` entry from the response.
+			 * @returns {string}
+			 *   That agent's display name.
+			 */
+			(agentWithOwner) => agentWithOwner.getAgent().getDisplayName()
+		);
 	} finally {
 		provider.stop();
 	}

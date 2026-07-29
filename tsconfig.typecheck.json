@@ -1,0 +1,34 @@
+{
+	"//": [
+		"Type-check-only config for `npm run typecheck` -- it never emits. It is what mechanically enforces",
+		"that every hand-written variable, function, parameter, return value and constant carries type",
+		"information: `checkJs` + `strict` turn a missing or wrong JSDoc type into a build failure.",
+		"",
+		"`files` is an EXPLICIT list, never include/exclude globs, so the 241k-line generated bundle in api/,",
+		"the npm/ release copy and the two git submodules can never be pulled in. Every hand-written .js file",
+		"in the repo is listed. example/globals.d.ts supplies the one browser global (`ondewo_nlu_api`) that",
+		"example/client.js reads, so the browser example is type-checked like everything else.",
+		"",
+		"eslint.config.mjs is not listed: it is an ESM config module for a tool that validates it at load",
+		"time, and `make eslint` fails loudly if it is broken."
+	],
+	"compilerOptions": {
+		"target": "es2022",
+		"module": "commonjs",
+		"strict": true,
+		"allowJs": true,
+		"checkJs": true,
+		"noEmit": true,
+		"skipLibCheck": true,
+		"types": ["node"]
+	},
+	"files": [
+		"auth/offlineTokenProvider.js",
+		"auth/offlineTokenProvider.spec.js",
+		"example/globals.d.ts",
+		"example/client.js",
+		"example/client.spec.js",
+		"example/listAgents.js",
+		"example/listAgents.spec.js"
+	]
+}

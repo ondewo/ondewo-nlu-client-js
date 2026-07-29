@@ -73,6 +73,9 @@ const EXPECTED_TOKEN_ENDPOINT =
  *   The request headers (`Content-Type`, `Accept`).
  * @property {string} body
  *   The URL-encoded form body.
+ * @property {object} [dispatcher]
+ *   The insecure undici `Agent` the module attaches when `keycloakVerifySsl === false`; `undefined` on
+ *   the secure default path. Asserted on by the TLS-verification test cases.
  */
 
 /**
@@ -203,6 +206,19 @@ runTestCase('login tolerates a trailing slash on keycloakUrl when building the t
 	provider.stop();
 });
 
+runTestCase('the realm is URL-encoded into the token endpoint path', async () => {
+	const stub = makeFetchStub([{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 300 } }]);
+
+	const provider = await login({ ...BASE_OPTIONS, realm: 'ondewo/ccai platform', fetchImpl: stub.fetchImpl });
+
+	// A realm carrying path/space characters must not be able to escape its path segment.
+	assert.equal(
+		stub.calls[0].url,
+		'https://auth.example.com/auth/realms/ondewo%2Fccai%20platform/protocol/openid-connect/token'
+	);
+	provider.stop();
+});
+
 runTestCase('auto-refresh exchanges the offline refresh_token for a fresh access token before expiry', async () => {
 	const stub = makeFetchStub([
 		{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 31 } },
@@ -233,10 +249,42 @@ runTestCase('auto-refresh exchanges the offline refresh_token for a fresh access
 	}
 });
 
+runTestCase('the next refresh is scheduled one skew window before the access token expires', async () => {
+	const stub = makeFetchStub([
+		{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 300 } },
+		{ body: { access_token: 'access-2', refresh_token: 'offline-2', expires_in: 300 } }
+	]);
+
+	mock.timers.enable({ apis: ['setTimeout'] });
+	try {
+		const provider = await login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl });
+
+		// 300s lifetime - REFRESH_SKEW_IN_S (30s) = 270s; pins the skew constant, not just "some delay".
+		mock.timers.tick(269_999);
+		await flushMicrotasks();
+		assert.equal(stub.calls.length, 1);
+
+		mock.timers.tick(1);
+		await flushMicrotasks();
+		assert.equal(stub.calls.length, 2);
+		provider.stop();
+	} finally {
+		mock.timers.reset();
+	}
+});
+
 runTestCase('the refresh loop stops after tokenExpirationInS elapses (no further renewal)', async () => {
 	const stub = makeFetchStub([{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 31 } }]);
 
+	/**
+	 * The mutable fake wall clock, advanced by the test to simulate elapsed time.
+	 * @type {number}
+	 */
 	let fakeNowInMs = 1_000_000;
+	/**
+	 * The injectable clock the provider reads instead of `Date.now`.
+	 * @type {() => number}
+	 */
 	const nowInMs = () => fakeNowInMs;
 
 	mock.timers.enable({ apis: ['setTimeout'] });
@@ -256,19 +304,30 @@ runTestCase('the refresh loop stops after tokenExpirationInS elapses (no further
 
 		// Deadline already passed -> refresh must NOT have fired; only the initial login call happened.
 		assert.equal(stub.calls.length, 1);
+		// The loop stopped, but the last-issued access token is still handed out (it is never cleared).
+		assert.equal(provider.getAccessToken(), 'access-1');
+		assert.equal(provider.getAuthorizationHeader(), 'Bearer access-1');
 		provider.stop();
 	} finally {
 		mock.timers.reset();
 	}
 });
 
-runTestCase('a long deadline clamps the next refresh delay to the remaining window', async () => {
+runTestCase('a deadline far beyond the token lifetime leaves the skew delay in charge', async () => {
 	const stub = makeFetchStub([
 		{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 31 } },
 		{ body: { access_token: 'access-2', refresh_token: 'offline-2', expires_in: 31 } }
 	]);
 
+	/**
+	 * A frozen fake clock; this case never advances wall time, only the timer queue.
+	 * @type {number}
+	 */
 	const fakeNowInMs = 2_000_000;
+	/**
+	 * The injectable clock the provider reads instead of `Date.now`.
+	 * @type {() => number}
+	 */
 	const nowInMs = () => fakeNowInMs;
 
 	mock.timers.enable({ apis: ['setTimeout'] });
@@ -293,6 +352,42 @@ runTestCase('a long deadline clamps the next refresh delay to the remaining wind
 	}
 });
 
+runTestCase('a remaining window shorter than the skew delay clamps the next refresh to the deadline', async () => {
+	const stub = makeFetchStub([
+		{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 300 } },
+		{ body: { access_token: 'access-2', refresh_token: 'offline-2', expires_in: 300 } }
+	]);
+
+	/**
+	 * The mutable fake wall clock, advanced in step with the timer queue.
+	 * @type {number}
+	 */
+	let fakeNowInMs = 3_000_000;
+	/**
+	 * The injectable clock the provider reads instead of `Date.now`.
+	 * @type {() => number}
+	 */
+	const nowInMs = () => fakeNowInMs;
+
+	mock.timers.enable({ apis: ['setTimeout'] });
+	try {
+		// expires_in 300 - 30 skew = 270s, but the deadline is only 5s away -> Math.min must pick 5s.
+		const provider = await login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl, nowInMs, tokenExpirationInS: 5 });
+
+		mock.timers.tick(4999);
+		await flushMicrotasks();
+		assert.equal(stub.calls.length, 1);
+
+		fakeNowInMs += 4999;
+		mock.timers.tick(1);
+		await flushMicrotasks();
+		assert.equal(stub.calls.length, 2);
+		provider.stop();
+	} finally {
+		mock.timers.reset();
+	}
+});
+
 runTestCase('login rejects a non-2xx token response with TokenError', async () => {
 	const stub = makeFetchStub([{ status: 401, body: { error: 'invalid_grant' } }]);
 	await assert.rejects(() => login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl }), TokenError);
@@ -303,15 +398,42 @@ runTestCase('login rejects when the token response carries no refresh_token (mis
 	await assert.rejects(() => login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl }), TokenError);
 });
 
-runTestCase('login validates required options', async () => {
-	const stub = makeFetchStub([]);
-	await assert.rejects(() => login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl, clientId: '' }), TokenError);
+runTestCase('login validates every required option (empty, missing, and non-string)', async () => {
+	/**
+	 * Every option `login()` must reject when absent, blank, or of the wrong type.
+	 * @type {(keyof typeof BASE_OPTIONS)[]}
+	 */
+	const requiredKeys = ['keycloakUrl', 'realm', 'clientId', 'username', 'password'];
+	/**
+	 * The unusable values each required option is probed with.
+	 * @type {unknown[]}
+	 */
+	const badValues = ['', undefined, 42];
+
+	for (const key of requiredKeys) {
+		for (const badValue of badValues) {
+			// Intentionally invalid inputs to exercise the runtime guard; cast past the typed signature.
+			const options = /** @type {any} */ ({
+				...BASE_OPTIONS,
+				fetchImpl: makeFetchStub([]).fetchImpl,
+				[key]: badValue
+			});
+			await assert.rejects(
+				() => login(options),
+				// The message must name the offending option, not just fail generically.
+				(error) => error instanceof TokenError && error.message.includes(`"${key}"`)
+			);
+		}
+	}
 });
 
 runTestCase('getAuthorizationHeader throws before bootstrap when no token is available', () => {
 	const stub = makeFetchStub([]);
 	const provider = new OfflineTokenProvider({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl });
-	assert.throws(() => provider.getAuthorizationHeader(), TokenError);
+	assert.throws(
+		() => provider.getAuthorizationHeader(),
+		(error) => error instanceof TokenError && error.name === 'TokenError'
+	);
 	assert.equal(provider.getAccessToken(), null);
 });
 
@@ -322,6 +444,12 @@ runTestCase('login rejects a 2xx token response whose body is not valid JSON', a
 
 runTestCase('login rejects a parseable token response that carries no access_token', async () => {
 	const stub = makeFetchStub([{ body: { refresh_token: 'offline-1', expires_in: 300 } }]);
+	await assert.rejects(() => login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl }), TokenError);
+});
+
+runTestCase('login rejects a token response whose access_token is an empty string', async () => {
+	// Present but blank: the `typeof` half of the guard passes, so only the length check can reject it.
+	const stub = makeFetchStub([{ body: { access_token: '', refresh_token: 'offline-1', expires_in: 300 } }]);
 	await assert.rejects(() => login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl }), TokenError);
 });
 
@@ -376,6 +504,41 @@ runTestCase('a failed background refresh without a registered handler is swallow
 
 		// No handler -> the rejection is swallowed; the stale token survives and nothing throws.
 		assert.equal(provider.getAccessToken(), 'access-1');
+
+		// One failure ends the loop for good -- refresh() rejects before it can re-arm the next timer.
+		mock.timers.tick(600_000);
+		await flushMicrotasks();
+		assert.equal(stub.calls.length, 2);
+		provider.stop();
+	} finally {
+		mock.timers.reset();
+	}
+});
+
+runTestCase('onRefreshError is not invoked when the background refresh succeeds', async () => {
+	const stub = makeFetchStub([
+		{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 31 } },
+		{ body: { access_token: 'access-2', refresh_token: 'offline-2', expires_in: 31 } }
+	]);
+
+	mock.timers.enable({ apis: ['setTimeout'] });
+	try {
+		const provider = await login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl });
+		/**
+		 * How often the diagnostics handler fired; must stay at zero on the happy path.
+		 * @type {number}
+		 */
+		let handlerCalls = 0;
+		provider.onRefreshError(() => {
+			handlerCalls += 1;
+		});
+
+		mock.timers.tick(1000);
+		await flushMicrotasks();
+		await flushMicrotasks();
+
+		assert.equal(handlerCalls, 0);
+		assert.equal(provider.getAccessToken(), 'access-2');
 		provider.stop();
 	} finally {
 		mock.timers.reset();
@@ -409,7 +572,57 @@ runTestCase('a refresh response without a rotated refresh_token keeps reusing th
 	}
 });
 
-runTestCase('an absent/zero expires_in falls back to the minimum refresh delay', async () => {
+runTestCase('a zero expires_in falls back to the minimum refresh delay', async () => {
+	const stub = makeFetchStub([
+		// A numeric but non-positive lifetime must take the same floor as an absent one (the `> 0` guard).
+		{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 0 } },
+		{ body: { access_token: 'access-2', refresh_token: 'offline-2', expires_in: 31 } }
+	]);
+
+	mock.timers.enable({ apis: ['setTimeout'] });
+	try {
+		const provider = await login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl });
+
+		mock.timers.tick(999);
+		await flushMicrotasks();
+		assert.equal(stub.calls.length, 1);
+
+		mock.timers.tick(1);
+		await flushMicrotasks();
+		assert.equal(stub.calls.length, 2);
+		assert.equal(provider.getAccessToken(), 'access-2');
+		provider.stop();
+	} finally {
+		mock.timers.reset();
+	}
+});
+
+runTestCase('a refresh response with an empty rotated refresh_token keeps reusing the previous one', async () => {
+	const stub = makeFetchStub([
+		{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 31 } },
+		// Keycloak echoes the field but leaves it empty -- it must NOT clobber the working offline token.
+		{ body: { access_token: 'access-2', refresh_token: '', expires_in: 31 } },
+		{ body: { access_token: 'access-3', refresh_token: 'offline-3', expires_in: 31 } }
+	]);
+
+	mock.timers.enable({ apis: ['setTimeout'] });
+	try {
+		const provider = await login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl });
+
+		mock.timers.tick(1000);
+		await flushMicrotasks();
+		mock.timers.tick(1000);
+		await flushMicrotasks();
+
+		assert.equal(stub.calls[2].params.get('refresh_token'), 'offline-1');
+		assert.equal(provider.getAccessToken(), 'access-3');
+		provider.stop();
+	} finally {
+		mock.timers.reset();
+	}
+});
+
+runTestCase('an absent expires_in falls back to the minimum refresh delay', async () => {
 	const stub = makeFetchStub([
 		// No expires_in -> the scheduler must clamp to MIN_REFRESH_DELAY_IN_S (1s), not spin a hot loop.
 		{ body: { access_token: 'access-1', refresh_token: 'offline-1' } },
@@ -436,7 +649,15 @@ runTestCase('an absent/zero expires_in falls back to the minimum refresh delay',
 runTestCase('a non-positive tokenExpirationInS lapses the loop immediately at schedule time', async () => {
 	const stub = makeFetchStub([{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 31 } }]);
 
+	/**
+	 * The mutable fake wall clock, advanced by the test to simulate elapsed time.
+	 * @type {number}
+	 */
 	let fakeNowInMs = 5_000_000;
+	/**
+	 * The injectable clock the provider reads instead of `Date.now`.
+	 * @type {() => number}
+	 */
 	const nowInMs = () => fakeNowInMs;
 
 	mock.timers.enable({ apis: ['setTimeout'] });
@@ -498,9 +719,40 @@ runTestCase('the refresh timer arms on the real event loop and is unref-ed (does
 	const stub = makeFetchStub([{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 300 } }]);
 	const provider = await login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl });
 	assert.equal(provider.getAccessToken(), 'access-1');
+
+	/**
+	 * The armed real timer handle, captured so its unref-ed and destroyed state can be asserted.
+	 * @type {any}
+	 */
+	const timer = provider.timer;
+	// The whole point of the unref() call: the armed timer must NOT hold the host process open.
+	assert.equal(timer.hasRef(), false);
+
 	// Stop immediately so the armed real timer is cleared and the test does not wait ~270s.
 	provider.stop();
+	// stop() must actually clearTimeout the handle, not merely drop the reference to it.
+	assert.equal(timer._destroyed, true);
+	assert.equal(provider.timer, null);
 	// stop() is idempotent: a second call with the timer already cleared takes the `timer === null` branch.
+	provider.stop();
+});
+
+runTestCase('a bounded loop works without an injected clock (nowInMs defaults to Date.now)', async () => {
+	const stub = makeFetchStub([{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 300 } }]);
+
+	// tokenExpirationInS WITHOUT nowInMs is a documented public combination: it must not blow up on the
+	// `Date.now` default. The deadline is derived from the real clock, so assert it lands in a sane window.
+	const before = Date.now();
+	const provider = await login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl, tokenExpirationInS: 3600 });
+	const after = Date.now();
+
+	/**
+	 * The bounded-loop deadline the provider derived from the real clock.
+	 * @type {number}
+	 */
+	const deadlineInMs = /** @type {number} */ (provider.deadlineInMs);
+	assert.ok(deadlineInMs >= before + 3_600_000);
+	assert.ok(deadlineInMs <= after + 3_600_000);
 	provider.stop();
 });
 
@@ -554,6 +806,9 @@ runTestCase('stop() during an in-flight refresh suppresses re-arming the next re
 
 		// The completed refresh still updated the token, but scheduleRefresh saw `stopped` and armed nothing.
 		assert.equal(provider.getAccessToken(), 'access-2');
+		// Pin "armed nothing" directly -- a fetch count alone cannot distinguish it from "armed a timer
+		// that fired and bailed out in refresh()'s own stopped-guard", which would leak a timer.
+		assert.equal(provider.timer, null);
 		mock.timers.tick(100_000);
 		await flushMicrotasks();
 		assert.equal(calls.length, 2);

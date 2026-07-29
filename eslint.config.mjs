@@ -1,16 +1,30 @@
+// Copyright 2021-2026 ONDEWO GmbH
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+// ESLint flat config for the hand-written JavaScript in this repo. The generated gRPC-web bundle
+// (api/), the two git submodules and the release scratch directories are never linted; everything a
+// human writes -- auth/, example/ and their specs -- is.
+
 import js from '@eslint/js'; // Core ESLint configuration
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { FlatCompat } from '@eslint/eslintrc';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-	baseDirectory: __dirname,
-	recommendedConfig: js.configs.recommended,
-	allConfig: js.configs.all
-});
-
+/**
+ * The flat config consumed by `make eslint` (`eslint --config eslint.config.mjs .`): one ignore block
+ * followed by one rule block covering every hand-written `.js` file.
+ *
+ * @type {import('eslint').Linter.Config[]}
+ */
 export default [
 	{
 		ignores: [
@@ -22,7 +36,8 @@ export default [
 			'dist/',
 			'.test-build/',
 			'.test-build-examples/',
-			'auth/*.js',
+			// auth/*.js is deliberately NOT ignored: auth/offlineTokenProvider.js is the only hand-written
+			// module this package ships, so it must be linted. Only its generated typings stay out.
 			'auth/*.d.ts'
 		]
 	},
@@ -41,6 +56,9 @@ export default [
 			ecmaVersion: 2022, // Set ECMAScript version
 			sourceType: 'module' // If using ES modules
 		},
+		// `eslint:recommended` plus this repo's house style: const-by-default, strict equality, explicit
+		// semicolons, consistent spacing/brace style, and a denylist of uninformative identifiers. Rules
+		// set to 'warn' are advisory and do not fail `make eslint`.
 		rules: {
 			...js.configs.recommended.rules,
 			'prefer-const': 'error',

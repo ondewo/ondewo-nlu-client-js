@@ -6,6 +6,11 @@ build_check.txt
 build_check_temp.txt
 RELEASE.md
 README.md
+# Markdown style is owned by markdownlint-cli2, not prettier (same reason as RELEASE.md/README.md)
+CLAUDE.md
+# Owned by their own tools; prettier's -w reflow of the giticket `args:` array is release-critical churn
+.pre-commit-config.yaml
+.markdownlint-cli2.yaml
 
 npm
 .idea/
@@ -19,8 +24,13 @@ src/ondewo-nlu-api/*
 grpc_cert
 package-lock.json
 package.json
+.ci-package.json
 api/
 npm/
 dist/
 .test-build/
 .test-build-examples/
+
+# c8 coverage output (gitignored, but the pre-commit hook's `prettier -w` would otherwise rewrite it)
+coverage/
+.nyc_output/

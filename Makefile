@@ -16,8 +16,8 @@ export
 
 ONDEWO_NLU_VERSION=6.14.0
 
-NLU_API_GIT_BRANCH=tags/6.14.0
-ONDEWO_PROTO_COMPILER_GIT_BRANCH=tags/5.10.0
+NLU_API_GIT_BRANCH=tags/7.0.0
+ONDEWO_PROTO_COMPILER_GIT_BRANCH=tags/5.11.0
 ONDEWO_PROTO_COMPILER_DIR=ondewo-proto-compiler
 NLU_APIS_DIR=src/ondewo-nlu-api
 NLU_PROTOS_DIR=${NLU_APIS_DIR}/ondewo
@@ -51,6 +51,9 @@ install_precommit_hooks: ## Install precommit hooks
 
 run_precommit_hooks: ## Runs all precommit hooks
 	.husky/pre-commit
+
+run_precommit_hooks_release: ## Runs the precommit hooks in release mode (skips `pre-commit run` + the test gate)
+	ONDEWO_RELEASE=1 .husky/pre-commit
 
 prettier: ## Checks formatting with Prettier - Use PRETTIER_WRITE=-w to also automatically apply corrections where needed
 	node_modules/.bin/prettier --config .prettierrc --check --ignore-path .prettierignore $(PRETTIER_WRITE) ./
@@ -96,7 +99,7 @@ release: ## Create Github and NPM Release
 	make install_precommit_hooks
 	make build
 	make check_build
-	make run_precommit_hooks
+	make run_precommit_hooks_release
 	git status
 	git add api
 	git add Makefile

@@ -3,9 +3,23 @@
 set -e
 make eslint
 make prettier PRETTIER_WRITE=-w
-# Run pre-commit hooks on a normal dev commit, but SKIP during automated release
-# codegen, which leaves .pre-commit-config.yaml unstaged and makes `pre-commit run`
-# abort with "Your pre-commit configuration is unstaged".
-if command -v pre-commit >/dev/null 2>&1 && git diff --quiet -- .pre-commit-config.yaml 2>/dev/null; then
-  pre-commit run
+npm run typecheck
+
+# Everything below runs on a normal dev commit only, and is SKIPPED during the automated release, which
+# invokes this hook DIRECTLY (`make run_precommit_hooks_release` -> .husky/pre-commit) after the codegen.
+#
+# That target sets ONDEWO_RELEASE=1; plain `make run_precommit_hooks` still runs everything. Two reasons
+# for the release to skip this block:
+#   * `pre-commit run` aborts with "Your pre-commit configuration is unstaged" whenever
+#     .pre-commit-config.yaml is dirty, which has already killed a release once.
+#   * the test suite loads the FRESHLY regenerated api/ondewo_nlu_api.min.js, so a proto rename would
+#     abort `make release` at an unrelated-looking line.
+# The release is still gated: .husky/pre-push runs the same suite on each of its pushes, and tests.yml
+# runs it on the pushed commits. The .pre-commit-config.yaml check is kept as a second line of defence.
+if [ -z "${ONDEWO_RELEASE}" ] && git diff --quiet -- .pre-commit-config.yaml 2>/dev/null; then
+  # The same gate CI runs: every spec in one c8 process at a 100% threshold (~1s, hermetic, no network).
+  npm test
+  if command -v pre-commit >/dev/null 2>&1; then
+    pre-commit run
+  fi
 fi

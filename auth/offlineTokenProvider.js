@@ -20,10 +20,14 @@
 // the short-lived access token from the offline refresh token before it expires. The current access
 // token is exposed for an `Authorization: Bearer <token>` gRPC metadata header. The refresh loop stops
 // after `tokenExpirationInS` (if given) has elapsed since login.
+//
+// As of ondewo-nlu-api 7.0.0 the `Users.Login` RPC (and `LoginRequest`/`LoginResponse`) are removed from
+// the generated bundle, so this is the only way to authenticate. `Users.CheckLogin` is unaffected and
+// remains the token-validity probe.
 
 'use strict';
 
-/* global URLSearchParams, setTimeout, clearTimeout, module */
+/* global require, URLSearchParams, setTimeout, clearTimeout, module */
 
 /**
  * A minimal structural subset of the WHATWG `Response` consumed by this module: the success flag, the
@@ -40,10 +44,33 @@
  */
 
 /**
+ * An opaque undici dispatcher (a connection pool). Only ever created and passed through by this module,
+ * never inspected, so its shape is deliberately not modelled.
+ *
+ * @typedef {object} Dispatcher
+ */
+
+/**
+ * The `fetch` init object this module builds for the token endpoint: a form-encoded POST, plus the
+ * optional undici `dispatcher` that disables TLS certificate verification (see {@link getInsecureDispatcher}).
+ *
+ * @typedef {object} TokenRequestInit
+ * @property {string} method
+ *   The HTTP method; always `'POST'`.
+ * @property {Record<string, string>} headers
+ *   The request headers (`Content-Type`, `Accept`).
+ * @property {string} body
+ *   The URL-encoded form body carrying the grant parameters.
+ * @property {Dispatcher} [dispatcher]
+ *   Present only when `keycloakVerifySsl === false`; honoured by the real global fetch (Node/undici) and
+ *   ignored by an injected {@link FetchImpl}.
+ */
+
+/**
  * The `fetch`-shaped function used to call the Keycloak token endpoint. Injectable so tests can supply
  * a hermetic stub; defaults to `globalThis.fetch` at runtime.
  *
- * @typedef {(url: string, init: object) => Promise<FetchResponse>} FetchImpl
+ * @typedef {(url: string, init: TokenRequestInit) => Promise<FetchResponse>} FetchImpl
  */
 
 /**
@@ -73,7 +100,9 @@
  * @property {string} clientId
  *   The PUBLIC SDK client id (`ondewo-nlu-cai-sdk-public`); no client_secret is sent.
  * @property {string} username
- *   The resource-owner username for the ROPC password grant.
+ *   The resource-owner username for the ROPC password grant. It must be a 2FA-exempt technical user
+ *   (create one with `Agents.CreateProjectTechnicalUser` and pass the returned `username`, not an
+ *   e-mail): a non-interactive password grant cannot answer an OTP challenge.
  * @property {string} password
  *   The resource-owner password for the ROPC password grant.
  * @property {number} [tokenExpirationInS]
@@ -110,11 +139,17 @@ const MIN_REFRESH_DELAY_IN_S = 1;
  */
 class TokenError extends Error {
 	/**
+	 * Build a token failure carrying a human-readable description.
+	 *
 	 * @param {string} message
 	 *   The human-readable failure description.
 	 */
 	constructor(message) {
 		super(message);
+		/**
+		 * The error name, used by consumers that discriminate on `error.name` rather than `instanceof`.
+		 * @type {string}
+		 */
 		this.name = 'TokenError';
 	}
 }
@@ -124,10 +159,17 @@ class TokenError extends Error {
  * optional `/auth` relative path already baked into it.
  *
  * @param {string} keycloakUrl
+ *   The Keycloak base URL; a trailing slash and an embedded `/auth` path are both tolerated.
  * @param {string} realm
+ *   The realm whose token endpoint is targeted; URL-encoded into the path.
  * @returns {string}
+ *   The fully-qualified OIDC token endpoint for that realm.
  */
 function buildTokenEndpoint(keycloakUrl, realm) {
+	/**
+	 * The base URL with any trailing slashes stripped, so the path can be appended unconditionally.
+	 * @type {string}
+	 */
 	const base = keycloakUrl.replace(/\/+$/, '');
 	return `${base}/realms/${encodeURIComponent(realm)}/protocol/openid-connect/token`;
 }
@@ -137,7 +179,7 @@ function buildTokenEndpoint(keycloakUrl, realm) {
  * insecure code path is first taken (`keycloakVerifySsl === false`), so `undici` is never required in the
  * common secure path.
  *
- * @type {object | null}
+ * @type {Dispatcher | null}
  */
 let insecureDispatcher = null;
 
@@ -147,12 +189,12 @@ let insecureDispatcher = null;
  * fetch performs the TLS handshake without certificate verification. Scoped to the token request only, so
  * it does not weaken the separate gRPC-web TLS.
  *
- * @returns {object}
+ * @returns {Dispatcher}
  *   The insecure undici `Agent` dispatcher.
  */
 function getInsecureDispatcher() {
 	if (insecureDispatcher === null) {
-		// eslint-disable-next-line global-require
+		// undici is required lazily so the dependency is only loaded on the insecure path.
 		const { Agent } = require('undici');
 		insecureDispatcher = new Agent({ connect: { rejectUnauthorized: false } });
 	}
@@ -179,8 +221,16 @@ function getInsecureDispatcher() {
  *   On a non-2xx response, a non-JSON body, or a body without a non-empty `access_token`.
  */
 async function postTokenRequest(tokenEndpoint, params, fetchImpl, verifySsl) {
+	/**
+	 * The grant parameters URL-encoded into an `application/x-www-form-urlencoded` request body.
+	 * @type {string}
+	 */
 	const body = new URLSearchParams(params).toString();
-	/** @type {object} */
+	/**
+	 * The request descriptor handed to `fetchImpl`, extended with the insecure dispatcher when TLS
+	 * verification is switched off.
+	 * @type {TokenRequestInit}
+	 */
 	const init = {
 		method: 'POST',
 		headers: {
@@ -192,12 +242,23 @@ async function postTokenRequest(tokenEndpoint, params, fetchImpl, verifySsl) {
 	if (verifySsl === false) {
 		init.dispatcher = getInsecureDispatcher();
 	}
+	/**
+	 * The token endpoint's response, reduced to the `ok`/`status`/`text()` subset this module reads.
+	 * @type {FetchResponse}
+	 */
 	const response = await fetchImpl(tokenEndpoint, init);
+	/**
+	 * The raw response body; read before the status check so a failure can quote the server's message.
+	 * @type {string}
+	 */
 	const text = await response.text();
 	if (!response.ok) {
 		throw new TokenError(`Keycloak token endpoint returned HTTP ${response.status}: ${text}`);
 	}
-	/** @type {TokenResponse} */
+	/**
+	 * The response body parsed as an OIDC token response.
+	 * @type {TokenResponse}
+	 */
 	let parsed;
 	try {
 		parsed = JSON.parse(text);
@@ -298,6 +359,10 @@ class OfflineTokenProvider {
 	 *   directAccessGrants + the offline_access scope).
 	 */
 	async bootstrap(username, password) {
+		/**
+		 * The login response carrying the first access token and the offline refresh token.
+		 * @type {TokenResponse}
+		 */
 		const tokenResponse = await postTokenRequest(
 			this.tokenEndpoint,
 			{
@@ -319,6 +384,10 @@ class OfflineTokenProvider {
 			);
 		}
 		if (this.tokenExpirationInS !== undefined) {
+			/**
+			 * The configured bound converted from seconds to milliseconds, to match the clock's unit.
+			 * @type {number}
+			 */
 			const expirationInMs = this.tokenExpirationInS * 1000;
 			this.deadlineInMs = this.nowInMs() + expirationInMs;
 		}
@@ -345,6 +414,11 @@ class OfflineTokenProvider {
 			this.stop();
 			return;
 		}
+		/**
+		 * The refresh response carrying a fresh access token and, when Keycloak rotates it, a new offline
+		 * refresh token.
+		 * @type {TokenResponse}
+		 */
 		const tokenResponse = await postTokenRequest(
 			this.tokenEndpoint,
 			{
@@ -377,9 +451,23 @@ class OfflineTokenProvider {
 		if (this.stopped) {
 			return;
 		}
+		/**
+		 * The access token lifetime in seconds, floored to {@link MIN_REFRESH_DELAY_IN_S} when the token
+		 * response omitted `expires_in` or reported a non-positive value.
+		 * @type {number}
+		 */
 		const expiresInS = typeof expiresInRaw === 'number' && expiresInRaw > 0 ? expiresInRaw : MIN_REFRESH_DELAY_IN_S;
+		/**
+		 * The delay until the next refresh, in seconds: one skew window before expiry, never below the
+		 * minimum, and further clamped to the bounded deadline below.
+		 * @type {number}
+		 */
 		let delayInS = Math.max(expiresInS - REFRESH_SKEW_IN_S, MIN_REFRESH_DELAY_IN_S);
 		if (this.deadlineInMs !== null) {
+			/**
+			 * Milliseconds left until the bounded-loop deadline; non-positive means the loop has lapsed.
+			 * @type {number}
+			 */
 			const remainingInMs = this.deadlineInMs - this.nowInMs();
 			if (remainingInMs <= 0) {
 				this.stop();
@@ -387,18 +475,32 @@ class OfflineTokenProvider {
 			}
 			delayInS = Math.min(delayInS, remainingInMs / 1000);
 		}
-		this.timer = setTimeout(() => {
-			this.refresh().catch((refreshError) => {
-				// Swallow a transient refresh failure but surface it so the caller can react; the next
-				// gRPC call gets the stale (possibly expired) token and re-logs in on UNAUTHENTICATED.
-				if (this.onRefreshErrorHandler !== null) {
-					this.onRefreshErrorHandler(refreshError);
-				}
-			});
-		}, delayInS * 1000);
-		// Do not keep the event loop alive solely for the refresh timer.
-		// c8 ignore next -- defensive: Node's real setTimeout always returns a Timeout exposing unref(); the
-		// non-function branch is unreachable here and only guards against exotic non-Node shims.
+		this.timer = setTimeout(
+			/**
+			 * Fire the refresh and absorb its rejection so an unhandled promise rejection can never crash
+			 * the host application from a background timer.
+			 * @returns {void}
+			 */
+			() => {
+				this.refresh().catch(
+					/**
+					 * Swallow a transient refresh failure but surface it so the caller can react; the next
+					 * gRPC call gets the stale (possibly expired) token and re-logs in on UNAUTHENTICATED.
+					 * @param {unknown} refreshError
+					 *   The rejection value from {@link OfflineTokenProvider#refresh}, typically a {@link TokenError}.
+					 * @returns {void}
+					 */
+					(refreshError) => {
+						if (this.onRefreshErrorHandler !== null) {
+							this.onRefreshErrorHandler(refreshError);
+						}
+					}
+				);
+			},
+			delayInS * 1000
+		);
+		// Do not keep the event loop alive solely for the refresh timer. Node's setTimeout returns a
+		// Timeout exposing unref(); a non-Node timer shim may return a bare handle, hence the guard.
 		if (typeof this.timer.unref === 'function') {
 			this.timer.unref();
 		}
@@ -416,22 +518,26 @@ class OfflineTokenProvider {
 	}
 
 	/**
-	 * The current access token, or null before bootstrap / after the bounded loop has lapsed.
+	 * The current access token, or `null` before {@link OfflineTokenProvider#bootstrap} has completed.
+	 * Note that the token is NOT cleared when the bounded loop lapses or {@link OfflineTokenProvider#stop}
+	 * is called: the last token issued keeps being handed out until it expires server-side.
 	 *
 	 * @returns {string | null}
-	 *   The current access token, or `null` when none is available.
+	 *   The current access token, or `null` when login has not completed.
 	 */
 	getAccessToken() {
 		return this.accessToken;
 	}
 
 	/**
-	 * The value for an `Authorization` gRPC metadata header: `Bearer <access_token>`.
+	 * The value for an `Authorization` gRPC metadata header: `Bearer <access_token>`. Keeps returning the
+	 * last issued token after the loop has lapsed (see {@link OfflineTokenProvider#getAccessToken}); an
+	 * expired token surfaces as an `UNAUTHENTICATED` gRPC status, which is the signal to re-login.
 	 *
 	 * @returns {string}
 	 *   The `Bearer <access_token>` header value.
 	 * @throws {TokenError}
-	 *   When no access token is available (login has not completed or the loop has lapsed).
+	 *   When no access token is available because login has not completed.
 	 */
 	getAuthorizationHeader() {
 		if (this.accessToken === null) {
@@ -470,14 +576,26 @@ async function login(options) {
 	if (options === undefined || options === null) {
 		throw new TokenError('login() requires an options object');
 	}
-	/** @type {(keyof LoginOptions)[]} */
+	/**
+	 * The option names that must each be present as a non-empty string before any network call is made.
+	 * @type {(keyof LoginOptions)[]}
+	 */
 	const requiredKeys = ['keycloakUrl', 'realm', 'clientId', 'username', 'password'];
 	for (const key of requiredKeys) {
+		/**
+		 * The supplied value for the option under validation; typed loosely because the guard exists
+		 * precisely to reject callers that ignored the declared signature.
+		 * @type {unknown}
+		 */
 		const value = options[key];
 		if (typeof value !== 'string' || value.length === 0) {
 			throw new TokenError(`login() option "${key}" is required and must be a non-empty string`);
 		}
 	}
+	/**
+	 * The provider being bootstrapped; returned to the caller once it holds a valid access token.
+	 * @type {OfflineTokenProvider}
+	 */
 	const provider = new OfflineTokenProvider(options);
 	await provider.bootstrap(options.username, options.password);
 	return provider;

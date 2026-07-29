@@ -1,10 +1,13 @@
 {
   "description": "ONDEWO Natural Language Understanding (NLU) Client library for Js",
   "scripts": {
-    "test": "c8 --check-coverage --lines 100 --branches 100 --functions 100 --include auth/offlineTokenProvider.js --exclude '**/*.spec.js' --reporter text node --test auth/offlineTokenProvider.spec.js",
-    "test:examples": "node --test example/listAgents.spec.js"
+    "prepare": "husky",
+    "test": "c8 --100 --per-file --all --include 'auth/**/*.js' --include 'example/**/*.js' --exclude '**/*.spec.js' --reporter text node --test auth/offlineTokenProvider.spec.js example/listAgents.spec.js example/client.spec.js",
+    "typecheck": "tsc -p tsconfig.typecheck.json"
   },
   "devDependencies": {
-    "c8": "^11.0.0"
+    "c8": "^11.0.0",
+    "typescript": "6.0.3",
+    "@types/node": "^22.15.27"
   }
 }
