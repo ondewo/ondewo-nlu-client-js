@@ -175,6 +175,15 @@ function buildTokenEndpoint(keycloakUrl, realm) {
 }
 
 /**
+ * The undici `Agent` options that switch TLS certificate verification OFF for the token request. Exported
+ * so the security-relevant `rejectUnauthorized: false` literal is pinned by a test rather than living as a
+ * bare literal that could be flipped without any test noticing.
+ *
+ * @type {{ connect: { rejectUnauthorized: boolean } }}
+ */
+const INSECURE_AGENT_OPTIONS = { connect: { rejectUnauthorized: false } };
+
+/**
  * Lazily-created, cached undici `Agent` that skips TLS certificate verification. Built only when the
  * insecure code path is first taken (`keycloakVerifySsl === false`), so `undici` is never required in the
  * common secure path.
@@ -196,7 +205,7 @@ function getInsecureDispatcher() {
 	if (insecureDispatcher === null) {
 		// undici is required lazily so the dependency is only loaded on the insecure path.
 		const { Agent } = require('undici');
-		insecureDispatcher = new Agent({ connect: { rejectUnauthorized: false } });
+		insecureDispatcher = new Agent(INSECURE_AGENT_OPTIONS);
 	}
 	return insecureDispatcher;
 }
@@ -601,4 +610,4 @@ async function login(options) {
 	return provider;
 }
 
-module.exports = { TokenError, OfflineTokenProvider, login };
+module.exports = { TokenError, OfflineTokenProvider, login, INSECURE_AGENT_OPTIONS };

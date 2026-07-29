@@ -26,7 +26,7 @@ const assert = require('node:assert/strict');
 
 const { Agent } = require('undici');
 
-const { login, OfflineTokenProvider, TokenError } = require('./offlineTokenProvider');
+const { login, OfflineTokenProvider, TokenError, INSECURE_AGENT_OPTIONS } = require('./offlineTokenProvider');
 
 /**
  * The shared, valid {@link login} options reused by every test case. Individual tests spread this and
@@ -857,6 +857,10 @@ runTestCase('keycloakVerifySsl=false attaches an insecure undici dispatcher to t
 	const provider = await login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl, keycloakVerifySsl: false });
 	assert.notEqual(stub.calls[0].init.dispatcher, undefined);
 	assert.ok(stub.calls[0].init.dispatcher instanceof Agent);
+	// Pin the security-relevant literal itself: an Agent built with `rejectUnauthorized: true` would
+	// silently disable the whole opt-out (self-signed Envoy logins would start failing the handshake)
+	// while still satisfying the `instanceof Agent` assertion above.
+	assert.deepEqual(INSECURE_AGENT_OPTIONS, { connect: { rejectUnauthorized: false } });
 	provider.stop();
 });
 

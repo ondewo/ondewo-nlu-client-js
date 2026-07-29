@@ -1,8 +1,9 @@
 {
 	"//": [
-		"Type-check-only config for `npm run typecheck` -- it never emits. It is what mechanically enforces",
-		"that every hand-written variable, function, parameter, return value and constant carries type",
-		"information: `checkJs` + `strict` turn a missing or wrong JSDoc type into a build failure.",
+		"Type-check-only config for `npm run typecheck` -- it never emits. `checkJs` + `strict` turn an",
+		"implicitly-any parameter, or a JSDoc type that contradicts the code, into a build failure. It",
+		"enforces type CORRECTNESS; it cannot enforce that annotations or prose are PRESENT (a stripped",
+		"JSDoc block still passes), so documentation completeness remains a review property.",
 		"",
 		"`files` is an EXPLICIT list, never include/exclude globs, so the 241k-line generated bundle in api/,",
 		"the npm/ release copy and the two git submodules can never be pulled in. Every hand-written .js file",

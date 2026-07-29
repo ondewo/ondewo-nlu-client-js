@@ -32,9 +32,10 @@ jobs:
       - name: ESLint
         run: make eslint
 
-      # Mechanically enforces that every hand-written variable, function, parameter, return value and
-      # constant carries type information: tsc runs with checkJs + strict, so a missing or wrong JSDoc
-      # type is a build failure. Scope is the explicit `files` list in tsconfig.typecheck.json.
+      # tsc with checkJs + strict over the hand-written JSDoc. It fails on implicitly-any parameters and
+      # on JSDoc types that contradict the code -- i.e. it enforces type CORRECTNESS, not the presence of
+      # annotations or prose (a stripped JSDoc block still passes; that stays a review property).
+      # Scope is the explicit `files` list in tsconfig.typecheck.json.
       - name: JSDoc type check
         run: npm run typecheck
 
