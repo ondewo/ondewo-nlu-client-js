@@ -364,8 +364,8 @@ class OfflineTokenProvider {
 	 * @returns {Promise<void>}
 	 *   Resolves once the initial tokens are stored and the first refresh is scheduled.
 	 * @throws {TokenError}
-	 *   On a failed token request or when the response carries no `refresh_token` (the SDK client lacks
-	 *   directAccessGrants + the offline_access scope).
+	 *   On a failed token request, or when the response carries no usable `refresh_token` -- absent, not a
+	 *   string, or empty (the SDK client lacks directAccessGrants + the offline_access scope).
 	 */
 	async bootstrap(username, password) {
 		/**
@@ -385,7 +385,13 @@ class OfflineTokenProvider {
 			this.verifySsl
 		);
 		this.accessToken = tokenResponse.access_token;
-		this.refreshToken = typeof tokenResponse.refresh_token === 'string' ? tokenResponse.refresh_token : null;
+		// An empty string is rejected exactly like a missing token, mirroring the rotation guard in
+		// refresh(): a blank offline token would otherwise bootstrap a provider whose every renewal POSTs
+		// `refresh_token=` and fails, turning a clear login error into a silent expiry ~5 minutes later.
+		this.refreshToken =
+			typeof tokenResponse.refresh_token === 'string' && tokenResponse.refresh_token.length > 0
+				? tokenResponse.refresh_token
+				: null;
 		if (this.refreshToken === null) {
 			throw new TokenError(
 				'Keycloak token response did not contain a refresh_token; the SDK client must have ' +

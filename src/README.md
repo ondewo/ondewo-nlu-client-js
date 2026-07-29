@@ -24,7 +24,7 @@
 
 ## Overview
 
-`@ondewo/nlu-client-js` is a compiled version of the [ONDEWO NLU API](https://github.com/ondewo/ondewo-nlu-api) using the [ONDEWO PROTO COMPILER](https://github.com/ondewo/ondewo-proto-compiler). Here you can find the NLU API [documentation](https://ondewo.github.io).
+`@ondewo/ondewo-nlu-client-js` is a compiled version of the [ONDEWO NLU API](https://github.com/ondewo/ondewo-nlu-api) using the [ONDEWO PROTO COMPILER](https://github.com/ondewo/ondewo-proto-compiler). Here you can find the NLU API [documentation](https://ondewo.github.io).
 
 ONDEWO APIs use [Protocol Buffers](https://github.com/google/protobuf) version 3 (proto3) as their Interface Definition Language (IDL) to define the API interface and the structure of the payload messages. The same interface definition is used for gRPC versions of the API in all languages.
 
@@ -96,7 +96,7 @@ The `make build` command is dependent on 2 `repositories` and their speciefied `
 
 Other than creating the proto-code, `build` also installs the `dev-dependencies` and changes the owner of the proto-code-files from `root` to the `current user`.
 
-> :white_check_mark: The js-compiler (version ~4.1.1) will prompt to download webpack -- write yes / y to finish the build
+> :white_check_mark: The js-compiler is pinned by `ONDEWO_PROTO_COMPILER_GIT_BRANCH` in the `Makefile` and is built from the `ondewo-proto-compiler` submodule by `make build_compiler`.
 
 ## Tests
 

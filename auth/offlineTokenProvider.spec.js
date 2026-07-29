@@ -398,6 +398,21 @@ runTestCase('login rejects when the token response carries no refresh_token (mis
 	await assert.rejects(() => login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl }), TokenError);
 });
 
+runTestCase('login rejects a token response whose refresh_token is an empty string', async () => {
+	// Present but blank is as unusable as absent: it must fail loudly at login rather than bootstrap a
+	// provider whose first background refresh POSTs an empty refresh_token and silently lapses.
+	const stub = makeFetchStub([{ body: { access_token: 'access-1', refresh_token: '', expires_in: 300 } }]);
+	await assert.rejects(
+		() => login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl }),
+		(error) => error instanceof TokenError && /did not contain a refresh_token/.test(error.message)
+	);
+});
+
+runTestCase('login rejects a token response whose refresh_token is not a string', async () => {
+	const stub = makeFetchStub([{ body: { access_token: 'access-1', refresh_token: 12345, expires_in: 300 } }]);
+	await assert.rejects(() => login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl }), TokenError);
+});
+
 runTestCase('login validates every required option (empty, missing, and non-string)', async () => {
 	/**
 	 * Every option `login()` must reject when absent, blank, or of the wrong type.
@@ -616,6 +631,35 @@ runTestCase('a refresh response with an empty rotated refresh_token keeps reusin
 
 		assert.equal(stub.calls[2].params.get('refresh_token'), 'offline-1');
 		assert.equal(provider.getAccessToken(), 'access-3');
+		provider.stop();
+	} finally {
+		mock.timers.reset();
+	}
+});
+
+runTestCase('a non-numeric expires_in cannot arm a hot-looping timer', async () => {
+	const stub = makeFetchStub([
+		{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 300 } },
+		{ body: { access_token: 'access-2', refresh_token: 'offline-2', expires_in: 300 } }
+	]);
+
+	mock.timers.enable({ apis: ['setTimeout'] });
+	try {
+		const provider = await login({ ...BASE_OPTIONS, fetchImpl: stub.fetchImpl });
+
+		// NaN cannot arrive through JSON.parse, but the `typeof === 'number'` half of the guard is what
+		// keeps a garbage lifetime from reaching Math.max -- NaN would propagate and setTimeout(NaN) fires
+		// on the next tick, i.e. a hot refresh loop against Keycloak. Re-arm directly to pin that.
+		provider.scheduleRefresh(Number.NaN);
+
+		mock.timers.tick(999);
+		await flushMicrotasks();
+		assert.equal(stub.calls.length, 1);
+
+		// Clamped to MIN_REFRESH_DELAY_IN_S (1s), not fired immediately.
+		mock.timers.tick(1);
+		await flushMicrotasks();
+		assert.equal(stub.calls.length, 2);
 		provider.stop();
 	} finally {
 		mock.timers.reset();
