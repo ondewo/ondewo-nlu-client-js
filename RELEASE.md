@@ -1,5 +1,15 @@
 # Release History
 
+***************** 
+## Release ONDEWO NLU Js Client 7.0.0 
+ 
+### Breaking Changes 
+ * Tracking API Version [7.0.0](https://github.com/ondewo/ondewo-nlu-api/releases/tag/7.0.0) ( [Documentation](https://ondewo.github.io/ondewo-nlu-api/) ) 
+ * BREAKING: the `Login` RPC and its `LoginRequest` / `LoginResponse` messages are removed, together with the `POST /v2/login` HTTP binding. Authentication is Keycloak-only - obtain an access token from Keycloak and send it as the `Authorization: Bearer &lt;token&gt;` header on every call. 
+ * Migration: construct the client with `keycloak_url`, `realm`, `client_id`, `user_name` and `password` in the `ClientConfig` and it mints and refreshes the token itself. The identity used must be exempt from 2FA, so create one with `CreateProjectTechnicalUser` and pass its `username` (not an e-mail). `CheckLogin` is not affected and remains the way to probe whether a token is still valid. 
+ * Also in this release: session-feedback CRUD and analytics RPCs on `Sessions`, full notification CRUD on `Users`, and remote-operation container logs/status RPCs on `Operations`. 
+
+
 *****************
 
 ## Release ONDEWO NLU Js Client 7.0.0
