@@ -10,16 +10,6 @@
 * [[OND221-2830]](https://ondewo.atlassian.net/browse/OND221-2830) No change to how the auth helper is consumed: this package ships a webpack bundle rather than a public-api barrel, and the auth helper is a Node-only `undici` consumer that does not belong in a browser bundle. It ships as its own CommonJS entry and is imported directly (`require('<pkg>/auth/offlineTokenProvider')`).
 * [[OND221-2830]](https://ondewo.atlassian.net/browse/OND221-2830) Tooling: `conventional-pre-commit` now runs before `giticket` at the commit-msg stage - with giticket first, its `[OND221-2830] fix: ...` rewrite was no longer valid Conventional Commits and every commit on a ticket branch failed. `README.md` is prettier-ignored where `.prettierrc` sets `useTabs` and markdownlint's MD010 de-tabs the same blocks, and the codegen `docker run` invocations no longer pass `-it`, which fails outside a TTY.
 
-***************** 
-## Release ONDEWO NLU Js Client 7.0.0 
- 
-### Breaking Changes 
- * Tracking API Version [7.0.0](https://github.com/ondewo/ondewo-nlu-api/releases/tag/7.0.0) ( [Documentation](https://ondewo.github.io/ondewo-nlu-api/) ) 
- * BREAKING: the `Login` RPC and its `LoginRequest` / `LoginResponse` messages are removed, together with the `POST /v2/login` HTTP binding. Authentication is Keycloak-only - obtain an access token from Keycloak and send it as the `Authorization: Bearer &lt;token&gt;` header on every call. 
- * Migration: construct the client with `keycloak_url`, `realm`, `client_id`, `user_name` and `password` in the `ClientConfig` and it mints and refreshes the token itself. The identity used must be exempt from 2FA, so create one with `CreateProjectTechnicalUser` and pass its `username` (not an e-mail). `CheckLogin` is not affected and remains the way to probe whether a token is still valid. 
- * Also in this release: session-feedback CRUD and analytics RPCs on `Sessions`, full notification CRUD on `Users`, and remote-operation container logs/status RPCs on `Operations`. 
-
-
 *****************
 
 ## Release ONDEWO NLU Js Client 7.0.0
