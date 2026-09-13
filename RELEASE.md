@@ -2,6 +2,15 @@
 
 *****************
 
+## Release ONDEWO NLU JS Client 7.1.1
+
+### Bug fixes
+
+* [[OND211-2418]](https://ondewo.atlassian.net/browse/OND211-2418) **A single failed background refresh permanently ended proactive token renewal.** `refresh()` re-arms the timer on its last line — after the `await` that performs the token request — so when that request threw, `scheduleRefresh()` was never reached and the timer callback's `catch` surfaced the error without re-arming. One transient answer from the token endpoint (a 502 from a proxy, a DNS blip, a restarting Keycloak) therefore ended background renewal for the life of the provider, leaving every later token to the stale-token/`UNAUTHENTICATED` fallback. The `catch` now re-arms via `scheduleRefresh(undefined)`, which uses `MIN_REFRESH_DELAY_IN_S` so a persistently failing endpoint is retried at a bounded floor rather than in a hot loop; the `stopped` and deadline guards still apply, so a stopped provider re-arms nothing.
+* The spec previously **pinned this defect as intended behaviour** ("One failure ends the loop for good"). That test now requires the re-arm and proves the provider recovers on the next tick.
+
+*****************
+
 ## Release ONDEWO NLU Js Client 7.1.0
 
 ### Improvements

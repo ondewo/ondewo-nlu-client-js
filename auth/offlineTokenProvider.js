@@ -509,6 +509,16 @@ class OfflineTokenProvider {
 						if (this.onRefreshErrorHandler !== null) {
 							this.onRefreshErrorHandler(refreshError);
 						}
+						// AND RE-ARM. refresh() reschedules on its last line, which is AFTER the await
+						// that just threw, so without this a single failed refresh left no timer armed
+						// and proactive renewal was over for the life of the provider -- one transient
+						// answer from the token endpoint (a 502 from a proxy, a DNS blip, a restarting
+						// Keycloak) and every later token came from the UNAUTHENTICATED fallback.
+						//
+						// undefined makes scheduleRefresh use MIN_REFRESH_DELAY_IN_S, so a persistently
+						// failing endpoint is retried at a bounded floor rather than in a hot loop, and
+						// the stopped/deadline guards at the top of scheduleRefresh still apply.
+						this.scheduleRefresh(undefined);
 					}
 				);
 			},

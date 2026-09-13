@@ -503,10 +503,11 @@ runTestCase('a failed background refresh is surfaced to onRefreshError and keeps
 	}
 });
 
-runTestCase('a failed background refresh without a registered handler is swallowed silently', async () => {
+runTestCase('a failed background refresh without a registered handler still re-arms and recovers', async () => {
 	const stub = makeFetchStub([
 		{ body: { access_token: 'access-1', refresh_token: 'offline-1', expires_in: 31 } },
-		{ status: 503, body: 'down' }
+		{ status: 503, body: 'down' },
+		{ body: { access_token: 'access-2', refresh_token: 'offline-2', expires_in: 31 } }
 	]);
 
 	mock.timers.enable({ apis: ['setTimeout'] });
@@ -520,10 +521,15 @@ runTestCase('a failed background refresh without a registered handler is swallow
 		// No handler -> the rejection is swallowed; the stale token survives and nothing throws.
 		assert.equal(provider.getAccessToken(), 'access-1');
 
-		// One failure ends the loop for good -- refresh() rejects before it can re-arm the next timer.
-		mock.timers.tick(600_000);
+		// ...and the loop RE-ARMS even with no handler registered. refresh() reschedules on its last
+		// line, after the await that threw, so the catch is the only thing that can keep proactive
+		// renewal alive; before this was fixed one transient 5xx ended it for the life of the
+		// provider. The re-arm uses MIN_REFRESH_DELAY_IN_S (1s).
+		mock.timers.tick(1000);
 		await flushMicrotasks();
-		assert.equal(stub.calls.length, 2);
+		await flushMicrotasks();
+		assert.equal(stub.calls.length, 3, 'the refresh loop did not re-arm after a failure');
+		assert.equal(provider.getAccessToken(), 'access-2');
 		provider.stop();
 	} finally {
 		mock.timers.reset();
