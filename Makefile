@@ -14,7 +14,7 @@ export
 # 		Variables
 ########################################################
 
-ONDEWO_NLU_VERSION=7.1.1
+ONDEWO_NLU_VERSION=7.1.2
 NLU_API_GIT_BRANCH=tags/7.1.0
 ONDEWO_PROTO_COMPILER_GIT_BRANCH=tags/5.14.0
 ONDEWO_PROTO_COMPILER_DIR=ondewo-proto-compiler
@@ -103,6 +103,10 @@ release: ## Create Github and NPM Release
 	git add api
 	git add Makefile
 	git add src
+# auth/ is the hand-written Keycloak provider, its spec and (nodejs) its build output. It is
+# top-level, so `git add src` does NOT cover it: leaving it out means a fix written there is
+# published to npm by `make build` while the git tag of that same version does not contain it.
+	git add auth
 	git add RELEASE.md
 	git add package.json
 	git add package-lock.json

@@ -109,6 +109,9 @@
  *   Optional bound, in seconds since login, after which the background refresh loop stops renewing.
  * @property {FetchImpl} [fetchImpl]
  *   Optional `fetch` override; defaults to `globalThis.fetch`.
+ * @property {() => number} [randomFraction]
+ *     Optional [0,1) random source for the failure-backoff jitter; defaults to `Math.random`.
+ *     Injected for deterministic tests.
  * @property {() => number} [nowInMs]
  *   Optional clock returning epoch milliseconds; defaults to `Date.now` (overridable for tests).
  * @property {boolean} [keycloakVerifySsl]
@@ -132,6 +135,33 @@ const REFRESH_SKEW_IN_S = 30;
  * @type {number}
  */
 const MIN_REFRESH_DELAY_IN_S = 1;
+
+/**
+ * First retry delay (seconds) after a FAILED background refresh. Deliberately far above
+ * {@link MIN_REFRESH_DELAY_IN_S}: 7.1.1 re-armed the failure path at that 1 s floor, which turns a
+ * Keycloak outage into a 1 Hz poll per client -- and ondewo runs one client per call container, so
+ * the clients that fail together then retry together against a realm they all share.
+ *
+ * @constant
+ * @type {number}
+ */
+const REFRESH_RETRY_BASE_DELAY_IN_S = 5;
+
+/**
+ * Ceiling (seconds) for the failure backoff: a persistent outage is retried at most this often.
+ *
+ * @constant
+ * @type {number}
+ */
+const REFRESH_RETRY_MAX_DELAY_IN_S = 300;
+
+/**
+ * Exponent cap so `2 ** n` cannot grow without bound; 5 * 2^6 = 320 already exceeds the ceiling.
+ *
+ * @constant
+ * @type {number}
+ */
+const MAX_REFRESH_RETRY_EXPONENT = 6;
 
 /**
  * Error raised on any token-endpoint or token-shape failure (non-2xx response, non-JSON body, missing
@@ -317,6 +347,8 @@ class OfflineTokenProvider {
 		 * @type {() => number}
 		 */
 		this.nowInMs = options.nowInMs !== undefined ? options.nowInMs : Date.now;
+		/** @type {() => number} The [0,1) random source used for the failure-backoff jitter. */
+		this.randomFraction = options.randomFraction !== undefined ? options.randomFraction : Math.random;
 		/**
 		 * Whether to verify the Keycloak TLS certificate on the token call (secure default).
 		 * @type {boolean}
@@ -352,6 +384,8 @@ class OfflineTokenProvider {
 		 * @type {((error: unknown) => void) | null}
 		 */
 		this.onRefreshErrorHandler = null;
+		/** @type {number} Consecutive failed background refreshes; drives the retry backoff. */
+		this.consecutiveRefreshFailures = 0;
 	}
 
 	/**
@@ -463,21 +497,56 @@ class OfflineTokenProvider {
 	 * @returns {void}
 	 */
 	scheduleRefresh(expiresInRaw) {
-		if (this.stopped) {
-			return;
-		}
+		// Only ever reached after a token exchange SUCCEEDED, so the backoff ladder resets here.
+		this.consecutiveRefreshFailures = 0;
 		/**
 		 * The access token lifetime in seconds, floored to {@link MIN_REFRESH_DELAY_IN_S} when the token
 		 * response omitted `expires_in` or reported a non-positive value.
 		 * @type {number}
 		 */
 		const expiresInS = typeof expiresInRaw === 'number' && expiresInRaw > 0 ? expiresInRaw : MIN_REFRESH_DELAY_IN_S;
+		this.armRefreshTimer(Math.max(expiresInS - REFRESH_SKEW_IN_S, MIN_REFRESH_DELAY_IN_S));
+	}
+
+	/**
+	 * Arm the next attempt after a FAILED refresh, using bounded exponential backoff with full jitter.
+	 *
+	 * The ceiling grows `REFRESH_RETRY_BASE_DELAY_IN_S * 2 ** (failures - 1)` up to
+	 * {@link REFRESH_RETRY_MAX_DELAY_IN_S}, and the actual wait is drawn uniformly from
+	 * `[base, ceiling]`. The jitter is the load-bearing half: N call containers whose refreshes fail in
+	 * the same instant would otherwise retry in lockstep for as long as the outage lasts.
+	 *
+	 * @returns {void}
+	 */
+	scheduleRetryAfterFailure() {
+		this.consecutiveRefreshFailures += 1;
+		const exponent = Math.min(this.consecutiveRefreshFailures - 1, MAX_REFRESH_RETRY_EXPONENT);
+		const growthFactor = 2 ** exponent;
+		const ceilingInS = Math.min(REFRESH_RETRY_BASE_DELAY_IN_S * growthFactor, REFRESH_RETRY_MAX_DELAY_IN_S);
+		const jitteredInS =
+			REFRESH_RETRY_BASE_DELAY_IN_S + this.randomFraction() * (ceilingInS - REFRESH_RETRY_BASE_DELAY_IN_S);
+		this.armRefreshTimer(jitteredInS);
+	}
+
+	/**
+	 * Arm the single refresh timer `delayInS` from now, clamped to the bounded deadline. Shared by the
+	 * success path ({@link OfflineTokenProvider#scheduleRefresh}) and the failure path
+	 * ({@link OfflineTokenProvider#scheduleRetryAfterFailure}) so the `stopped` guard, the deadline
+	 * clamp and the `unref` are written exactly once.
+	 *
+	 * @param {number} delayInS
+	 *     Seconds to wait before the next refresh attempt.
+	 * @returns {void}
+	 */
+	armRefreshTimer(delayInS) {
+		if (this.stopped) {
+			return;
+		}
 		/**
-		 * The delay until the next refresh, in seconds: one skew window before expiry, never below the
-		 * minimum, and further clamped to the bounded deadline below.
+		 * The delay actually used, after clamping to whatever is left of the bounded deadline.
 		 * @type {number}
 		 */
-		let delayInS = Math.max(expiresInS - REFRESH_SKEW_IN_S, MIN_REFRESH_DELAY_IN_S);
+		let effectiveDelayInS = delayInS;
 		if (this.deadlineInMs !== null) {
 			/**
 			 * Milliseconds left until the bounded-loop deadline; non-positive means the loop has lapsed.
@@ -488,7 +557,7 @@ class OfflineTokenProvider {
 				this.stop();
 				return;
 			}
-			delayInS = Math.min(delayInS, remainingInMs / 1000);
+			effectiveDelayInS = Math.min(effectiveDelayInS, remainingInMs / 1000);
 		}
 		this.timer = setTimeout(
 			/**
@@ -506,8 +575,14 @@ class OfflineTokenProvider {
 					 * @returns {void}
 					 */
 					(refreshError) => {
-						if (this.onRefreshErrorHandler !== null) {
-							this.onRefreshErrorHandler(refreshError);
+						try {
+							if (this.onRefreshErrorHandler !== null) {
+								this.onRefreshErrorHandler(refreshError);
+							}
+						} catch {
+							// A diagnostics handler that throws is the caller's bug. Letting it escape
+							// this callback would reject the promise nothing is awaiting -- an
+							// unhandledRejection, which Node terminates the process on by default.
 						}
 						// AND RE-ARM. refresh() reschedules on its last line, which is AFTER the await
 						// that just threw, so without this a single failed refresh left no timer armed
@@ -515,14 +590,15 @@ class OfflineTokenProvider {
 						// answer from the token endpoint (a 502 from a proxy, a DNS blip, a restarting
 						// Keycloak) and every later token came from the UNAUTHENTICATED fallback.
 						//
-						// undefined makes scheduleRefresh use MIN_REFRESH_DELAY_IN_S, so a persistently
-						// failing endpoint is retried at a bounded floor rather than in a hot loop, and
-						// the stopped/deadline guards at the top of scheduleRefresh still apply.
-						this.scheduleRefresh(undefined);
+						// 7.1.1 re-armed via scheduleRefresh(undefined), which falls back to
+						// MIN_REFRESH_DELAY_IN_S -- a 1 s retry, i.e. a 1 Hz poll for the whole outage,
+						// in lockstep across every client that failed at the same moment. The failure
+						// path has its own backed-off, jittered ladder now.
+						this.scheduleRetryAfterFailure();
 					}
 				);
 			},
-			delayInS * 1000
+			effectiveDelayInS * 1000
 		);
 		// Do not keep the event loop alive solely for the refresh timer. Node's setTimeout returns a
 		// Timeout exposing unref(); a non-Node timer shim may return a bare handle, hence the guard.
