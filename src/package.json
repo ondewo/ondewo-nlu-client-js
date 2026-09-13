@@ -1,6 +1,6 @@
 {
   "name": "@ondewo/ondewo-nlu-client-js",
-  "version": "7.1.2",
+  "version": "7.1.3",
   "description": "ONDEWO Natural Language Understanding (NLU) Client library for Js",
   "author": "ONDEWO GmbH <office@ondewo.com>",
   "homepage": "https://ondewo.com",
@@ -36,7 +36,7 @@
     "directory": "https://github.com/ondewo/ondewo-nlu-client-js.git"
   },
   "dependencies": {
-    "google-protobuf": "^3.21.4",
+    "google-protobuf": "^4.0.2",
     "grpc-web": "^1.5.0",
     "webpack": "^5.99.9",
     "terser-webpack-plugin": "^5.3.14",
