@@ -17,11 +17,12 @@
     "api/ondewo_nlu_api.js",
     "api/ondewo_nlu_api.min.js",
     "api/ondewo_nlu_api.min.js.map",
+    "auth/grpcWebEndpoint.js",
     "auth/offlineTokenProvider.js"
   ],
   "scripts": {
     "prepare": "husky",
-    "test": "c8 --100 --per-file --all --include 'auth/**/*.js' --include 'example/**/*.js' --exclude '**/*.spec.js' --reporter text node --test auth/offlineTokenProvider.spec.js example/listAgents.spec.js example/client.spec.js && npm run test:protos",
+    "test": "c8 --100 --per-file --all --include 'auth/**/*.js' --include 'example/**/*.js' --exclude '**/*.spec.js' --reporter text node --test auth/offlineTokenProvider.spec.js auth/grpcWebEndpoint.spec.js example/listAgents.spec.js example/client.spec.js && npm run test:protos && npm run test:release-notes",
     "initialize": "git submodule update --init --recursive --remote",
     "build": "docker run -v ${PWD}:/input-volume -v ${PWD}/../api:/output-volume ondewo-js-proto-compiler ondewo-nlu-api ondewo-nlu-api ondewo",
     "debug": "docker run --entrypoint /bin/bash -v ${PWD}/src:/input-volume -v ${PWD}/src/..:/output-volume $npm_package_config_compiler",
@@ -31,7 +32,8 @@
     "example-link-lib": "sudo ln -s lib/nlu.js example/lib/nlu.js",
     "build-sample": "docker run -v ${PWD}/src:/input-volume -v ${PWD}/src/../api:/output-volume $npm_package_config_compiler nlu ondewo-nlu-api ondewo-nlu-api ondewo",
     "typecheck": "tsc -p tsconfig.typecheck.json",
-    "test:protos": "node --test tests/bundleStringRoundTrip.spec.js"
+    "test:protos": "node --test tests/bundleStringRoundTrip.spec.js",
+    "test:release-notes": "node --test tests/releaseNotes.spec.js"
   },
   "repository": {
     "type": "git",
