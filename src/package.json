@@ -17,6 +17,7 @@
     "api/ondewo_nlu_api.js",
     "api/ondewo_nlu_api.min.js",
     "api/ondewo_nlu_api.min.js.map",
+    "auth/grpcWebEndpoint.js",
     "auth/offlineTokenProvider.js"
   ],
   "scripts": {

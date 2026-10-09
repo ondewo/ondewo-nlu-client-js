@@ -24,6 +24,8 @@
 		"types": ["node"]
 	},
 	"files": [
+		"auth/grpcWebEndpoint.js",
+		"auth/grpcWebEndpoint.spec.js",
 		"auth/offlineTokenProvider.js",
 		"auth/offlineTokenProvider.spec.js",
 		"example/globals.d.ts",

@@ -164,6 +164,14 @@ const REFRESH_RETRY_MAX_DELAY_IN_S = 300;
 const MAX_REFRESH_RETRY_EXPONENT = 6;
 
 /**
+ * What {@link OfflineTokenProvider#toJSON} renders in place of a token.
+ *
+ * @constant
+ * @type {string}
+ */
+const REDACTED = '***REDACTED***';
+
+/**
  * Error raised on any token-endpoint or token-shape failure (non-2xx response, non-JSON body, missing
  * `access_token`/`refresh_token`, missing access token at read time, or invalid {@link login} options).
  */
@@ -645,6 +653,37 @@ class OfflineTokenProvider {
 			throw new TokenError('No access token available; login() has not completed or has lapsed');
 		}
 		return `Bearer ${this.accessToken}`;
+	}
+
+	/**
+	 * A logging-safe view of this provider: the access and refresh tokens render as `***REDACTED***`
+	 * (`null` before login stays `null`). `JSON.stringify(provider)` uses it, and so do Node's
+	 * `console.log(provider)` / `util.inspect(provider)` through the hook below, so none of them prints a
+	 * token.
+	 *
+	 * @returns {{ tokenEndpoint: string, clientId: string, accessToken: string | null, refreshToken: string | null, stopped: boolean }}
+	 *   The endpoint, client id and stop flag, with both tokens redacted.
+	 */
+	toJSON() {
+		return {
+			tokenEndpoint: this.tokenEndpoint,
+			clientId: this.clientId,
+			accessToken: this.accessToken === null || this.accessToken === '' ? this.accessToken : REDACTED,
+			refreshToken: this.refreshToken === null || this.refreshToken === '' ? this.refreshToken : REDACTED,
+			stopped: this.stopped
+		};
+	}
+
+	/**
+	 * Node's `util.inspect` hook (used by `console.log`): renders {@link OfflineTokenProvider#toJSON}, so
+	 * logging the provider never prints a token. Looked up via `Symbol.for`, so no `util` import is needed
+	 * and the module stays usable in a browser bundle.
+	 *
+	 * @returns {ReturnType<OfflineTokenProvider['toJSON']>}
+	 *   The redacted view.
+	 */
+	[Symbol.for('nodejs.util.inspect.custom')]() {
+		return this.toJSON();
 	}
 
 	/**
