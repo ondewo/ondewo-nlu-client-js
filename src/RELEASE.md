@@ -233,6 +233,18 @@
 
 *****************
 
+## Release ONDEWO NLU Js Client 5.0.0
+
+### Improvements
+
+* Tracking API Version [5.0.0](https://github.com/ondewo/ondewo-nlu-api/releases/tag/5.0.0) ( [Documentation](https://ondewo.github.io/ondewo-nlu-api/) )
+* Built with ONDEWO proto compiler 5.0.0
+* Adjusted to the new ondewo-nlu-api structure (the google protos are no longer in the googleapis folder)
+* webpack 5.75.0 as a dependency, Node 20.12.0 in the build image
+* New README documentation
+
+*****************
+
 ## Release ONDEWO NLU Js Client 3.4.0
 
 ### Improvements
@@ -281,8 +293,19 @@
 
 *****************
 
-## Release ONDEWO NLU JS Client 2.13.0
+## Release ONDEWO NLU Js Client 2.13.0
 
 * Track version 2.13.0 of [ONDEWO NLU API](https://github.com/ondewo/ondewo-nlu-api/releases/2.13.0)
 * [[OND211-2039]](https://ondewo.atlassian.net/browse/OND211-2039) - Implemented automated release for GitHub and NPM
 * [[OND211-2039]](https://ondewo.atlassian.net/browse/OND211-2039) - Added pre-commit hooks and adjusted files to them
+
+*****************
+
+## Release ONDEWO NLU Js Client 2.1.0
+
+### Improvements
+
+* Tracking API Version [2.1.0](https://github.com/ondewo/ondewo-nlu-api/releases/tag/2.1.0)
+* Built the NLU client based on ONDEWO NLU API 2.1.0
+
+*****************
