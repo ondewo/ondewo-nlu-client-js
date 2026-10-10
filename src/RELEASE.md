@@ -2,6 +2,39 @@
 
 *****************
 
+## Release ONDEWO NLU Js Client 7.3.1
+
+### Improvements
+
+* [[OND211-2443]](https://ondewo.atlassian.net/browse/OND211-2443) TLS: new `auth/grpcWebEndpoint.js`
+  (`buildGrpcWebEndpoint`) builds the gRPC-web endpoint URL for the generated clients per the ONDEWO TLS contract:
+  `https://` by default, plaintext `http://` only with `useSecureChannel: false`, which logs a `console.warn` naming
+  `host:port`. A bare IPv6 host is bracketed (`::1` becomes `https://[::1]:8443`), a `[...]` host is kept as given, and
+  a host carrying a scheme, a path or a port, a port outside 1..65535 or a non-boolean `useSecureChannel` is refused.
+* [[OND211-2443]](https://ondewo.atlassian.net/browse/OND211-2443) `grpcCert`, `grpcClientCert` and `grpcClientKey`
+  are refused with an error naming the option, never its value: a browser verifies the server against its own trust
+  store and presents a client certificate only from its own certificate store, and a private key must never be shipped
+  to a browser. Mutual TLS from a browser works with a client certificate installed in the browser / OS certificate
+  store, or with the gRPC-web proxy (Envoy) terminating TLS and using mutual TLS upstream.
+* [[OND211-2443]](https://ondewo.atlassian.net/browse/OND211-2443) `OfflineTokenProvider` gains `toJSON()` and a Node
+  `util.inspect` hook that render the access and refresh tokens as `***REDACTED***` (a token not yet set stays `null`),
+  so `JSON.stringify`, `console.log` and `util.inspect` of a provider never print a token.
+* [[OND211-2443]](https://ondewo.atlassian.net/browse/OND211-2443) README: new section "TLS, mutual TLS and
+  certificates" (modes, the Envoy mutual-TLS setup, why gRPC-web has no keepalive / backoff channel options, and the
+  Node.js SDK for mutual TLS from code with PEM files).
+
+### Tests and release notes
+
+* `auth/grpcWebEndpoint.spec.js` and new `auth/offlineTokenProvider.spec.js` cases cover the endpoint builder and the
+  token redaction under the 100% coverage gate.
+* `tests/releaseNotes.spec.js` pins the Makefile's release-notes slice, every heading's spelling, one `*****`
+  separator per section and a non-empty slice for the released version.
+* RELEASE.md: added the 5.0.0 section (its GitHub release body was empty) and the 2.1.0 section (a tag without a
+  release) from the tags' git history, and fixed the 2.13.0 heading spelling, which the release-notes slice never
+  matched.
+
+*****************
+
 ## Release ONDEWO NLU Js Client 7.3.0
 
 ### Improvements
