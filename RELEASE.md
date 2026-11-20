@@ -2,6 +2,15 @@
 
 *****************
 
+## Release ONDEWO NLU Js Client 7.6.0
+
+### Improvements
+
+* Tracking API Version [7.6.0](https://github.com/ondewo/ondewo-nlu-api/releases/tag/7.6.0) ( [Documentation](https://ondewo.github.io/ondewo-nlu-api/) )
+* Generated with ondewo-proto-compiler 5.17.0 (protoc 35.1, `protoc-gen-grpc-web` 2.1.1). New runtime floors: `grpc-web` ^2.1.1 and `google-protobuf` ^4.0.3. grpc-web 2.1.1 limits a response to 4 MB by default: set `maxReceiveMessageSize` to receive more.
+
+*****************
+
 ## Release ONDEWO NLU Js Client 7.4.0
 
 ### Improvements
