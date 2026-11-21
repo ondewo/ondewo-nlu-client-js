@@ -290,8 +290,9 @@ runTestCase('builds the gRPC-web client from the api namespace when no clientFac
 });
 
 runTestCase('falls back to the real offline-token login when no loginImpl is injected', async () => {
-	// login() validates its five required string options before constructing a provider or calling fetch,
-	// so the default seam is exercised hermetically -- no network, no timer.
+	// login() validates its options (a password OR a handed-off refreshToken is required) before
+	// constructing a provider or calling fetch, so the default seam is exercised hermetically -- no
+	// network, no timer.
 	await assert.rejects(
 		() =>
 			listAgentDisplayNames({
@@ -308,6 +309,6 @@ runTestCase('falls back to the real offline-token login when no loginImpl is inj
 					}
 				})
 			}),
-		/login\(\) option "password" is required/
+		/login\(\): either the option `password` or the option `refreshToken`/
 	);
 });
