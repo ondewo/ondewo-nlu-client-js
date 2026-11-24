@@ -14,8 +14,8 @@ export
 # 		Variables
 ########################################################
 
-ONDEWO_NLU_VERSION=7.4.0
-NLU_API_GIT_BRANCH=tags/7.4.0
+ONDEWO_NLU_VERSION=7.5.0
+NLU_API_GIT_BRANCH=tags/7.5.0
 ONDEWO_PROTO_COMPILER_GIT_BRANCH=tags/5.15.7
 ONDEWO_PROTO_COMPILER_DIR=ondewo-proto-compiler
 NLU_APIS_DIR=src/ondewo-nlu-api
@@ -133,7 +133,7 @@ gh_release: build_utils_docker_image release_to_github_via_docker_image ## Build
 
 npm_release: ## Releases to NPM
 	@echo "Start NPM Release"
-	npm publish ./npm --access public
+	npm publish ./npm --access public --tag release-7.5
 	@echo "Finished NPM Release"
 
 create_release_branch: ## Create Release Branch and push it to origin
@@ -150,7 +150,7 @@ login_to_gh: ## Login to Github CLI with Access Token
 	@printf '%s\n' "$${GITHUB_GH_TOKEN}" | gh auth login -p ssh --with-token
 
 build_gh_release: ## Generate Github Release with CLI
-	gh release create --repo $(GH_REPO) "$(ONDEWO_NLU_VERSION)" -n "$(CURRENT_RELEASE_NOTES)" -t "Release ${ONDEWO_NLU_VERSION}"
+	gh release create --latest=false --repo $(GH_REPO) "$(ONDEWO_NLU_VERSION)" -n "$(CURRENT_RELEASE_NOTES)" -t "Release ${ONDEWO_NLU_VERSION}"
 
 ########################################################
 #		Docker
